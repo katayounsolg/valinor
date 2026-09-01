@@ -1,0 +1,517 @@
+.page {
+  min-height: 100vh;
+  background: #fbf8f3;
+  color: #1f1f1f;
+}
+
+/* ---------- Collection Header ---------- */
+
+.collectionHeader {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 64px 70px 0;
+  box-sizing: border-box;
+  direction: ltr;
+}
+
+.collectionHeaderInner {
+  border-top: 1px solid #e8e4df;
+  border-bottom: 1px solid #e8e4df;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  min-height: 236px;
+}
+
+.collectionHeaderText {
+  padding: 46px 48px 42px 0;
+  text-align: left;
+}
+
+.collectionEyebrow {
+  margin: 0 0 24px;
+
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 4.5px;
+
+  color: #77716b;
+  text-transform: uppercase;
+}
+
+.collectionHeader h1 {
+  margin: 0;
+
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.2px;
+
+  color: #202020;
+}
+
+.collectionDescription {
+  margin: 28px 0 0;
+  max-width: 560px;
+
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.85;
+  letter-spacing: 0.5px;
+
+  color: #6f6a65;
+}
+
+.collectionMetaPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 18px;
+
+  padding: 42px 0 42px 24px;
+}
+
+.collectionMetaPanel span {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 4px;
+
+  color: #77716b;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------- Products Grid ---------- */
+
+.products {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 76px 70px 110px;
+  box-sizing: border-box;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 58px 54px;
+  align-items: start;
+}
+
+/* ---------- Principles Section ---------- */
+
+.principlesSection {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 70px 68px;
+  box-sizing: border-box;
+  direction: ltr;
+}
+
+.principlesBox {
+  border: 1px solid #e8e4df;
+  background: #fbf8f3;
+
+  display: grid;
+  grid-template-columns: 305px 1fr;
+  min-height: 276px;
+
+  direction: ltr;
+}
+
+.principlesIntro {
+  background: #f3f1ed;
+  border-right: 1px solid #e8e4df;
+
+  padding: 42px 36px 36px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.principlesIntro p {
+  margin: 0;
+
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 31px;
+  font-weight: 400;
+  line-height: 1.16;
+  letter-spacing: 0;
+
+  color: #202020;
+}
+
+.principlesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: start;
+
+  padding: 38px 34px 30px;
+  direction: ltr;
+}
+
+.principleItem {
+  text-align: center;
+  padding: 0 16px;
+}
+
+.principleIcon {
+  width: 66px;
+  height: 66px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 20px;
+  mix-blend-mode: multiply;
+}
+
+.principleItem h3 {
+  margin: 0 0 20px;
+
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1.12;
+
+  color: #202020;
+}
+
+.principleItem p {
+  margin: 0 auto;
+  max-width: 190px;
+
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.2px;
+
+  color: #6f6a65;
+}
+
+/* ---------- Principles Bottom Mark ---------- */
+
+.principlesBottom {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  align-items: center;
+  column-gap: 24px;
+
+  margin-top: 28px;
+}
+
+.principlesMarkBox {
+  width: 64px;
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.principlesMark {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  display: block;
+}
+
+.principlesFooterText {
+  position: relative;
+  text-align: center;
+  padding: 18px 24px;
+}
+
+.principlesFooterText::before,
+.principlesFooterText::after {
+  content: "";
+  position: absolute;
+  left: 0;
+
+  width: 100%;
+  height: 1px;
+
+  background: #e8e4df;
+}
+
+.principlesFooterText::before {
+  top: 0;
+}
+
+.principlesFooterText::after {
+  bottom: 0;
+}
+
+.principlesFooterText span {
+  display: inline-block;
+
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 5px;
+  color: #66615c;
+  text-transform: uppercase;
+}
+
+/* ---------- Tablet ---------- */
+
+@media (max-width: 900px) {
+  .collectionHeader {
+    padding: 48px 24px 0;
+  }
+
+  .collectionHeaderInner {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .collectionHeaderText {
+    padding: 42px 0 38px;
+  }
+
+  .collectionEyebrow {
+    margin-bottom: 28px;
+    font-size: 11px;
+    letter-spacing: 4.4px;
+  }
+
+  .collectionHeader h1 {
+    font-size: 52px;
+    line-height: 1;
+  }
+
+  .collectionDescription {
+    margin-top: 28px;
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.85;
+    letter-spacing: 0.45px;
+  }
+
+  .collectionMetaPanel {
+    border-top: 1px solid #e8e4df;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 18px;
+
+    padding: 30px 0 34px;
+  }
+
+  .products {
+    padding: 58px 24px 88px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 34px 18px;
+  }
+
+  .grid h3 {
+    font-size: 23px !important;
+    line-height: 1.08 !important;
+  }
+
+  .principlesSection {
+    padding: 10px 24px 58px;
+  }
+
+  .principlesBox {
+    grid-template-columns: 1fr;
+  }
+
+  .principlesIntro {
+    border-right: none;
+    border-bottom: 1px solid #e8e4df;
+    padding: 40px 30px 38px;
+  }
+
+  .principlesIntro p {
+    font-size: 32px;
+    line-height: 1.18;
+  }
+
+  .principlesGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 44px 20px;
+    padding: 40px 22px 34px;
+  }
+
+  .principleItem {
+    padding: 0 8px;
+  }
+
+  .principleIcon {
+    width: 62px;
+    height: 62px;
+    margin-bottom: 18px;
+  }
+
+  .principleItem h3 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .principleItem p {
+    max-width: 180px;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .principlesBottom {
+    grid-template-columns: 1fr;
+    row-gap: 18px;
+    margin-top: 24px;
+  }
+
+  .principlesMarkBox {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto;
+  }
+
+  .principlesMark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .principlesFooterText {
+    padding: 16px 0;
+  }
+
+  .principlesFooterText span {
+    letter-spacing: 3px;
+    line-height: 1.8;
+  }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 480px) {
+  .collectionHeader {
+    padding: 42px 30px 0;
+  }
+
+  .collectionHeaderInner {
+    border-top: 1px solid #e8e4df;
+    border-bottom: 1px solid #e8e4df;
+  }
+
+  .collectionHeaderText {
+    padding: 36px 0 34px;
+  }
+
+  .collectionEyebrow {
+    margin-bottom: 26px;
+
+    font-size: 10px;
+    line-height: 1.5;
+    letter-spacing: 4px;
+  }
+
+  .collectionHeader h1 {
+    font-size: 46px;
+    line-height: 1;
+  }
+
+  .collectionDescription {
+    margin-top: 28px;
+
+    font-size: 14px;
+    line-height: 1.78;
+    letter-spacing: 0.35px;
+  }
+
+  .collectionMetaPanel {
+    padding: 28px 0 30px;
+    gap: 16px;
+  }
+
+  .collectionMetaPanel span {
+    font-size: 10px;
+    letter-spacing: 4px;
+  }
+
+  .products {
+    padding: 52px 30px 76px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 34px 18px;
+  }
+
+  .grid h3 {
+    font-size: 20px !important;
+    line-height: 1.08 !important;
+  }
+
+  .principlesSection {
+    padding: 4px 30px 54px;
+  }
+
+  .principlesIntro {
+    padding: 38px 30px 36px;
+  }
+
+  .principlesIntro p {
+    font-size: 30px;
+  }
+
+  .principlesGrid {
+    grid-template-columns: 1fr;
+    gap: 42px;
+    padding: 42px 28px 38px;
+  }
+
+  .principleIcon {
+    width: 66px;
+    height: 66px;
+  }
+
+  .principleItem h3 {
+    font-size: 25px;
+  }
+
+  .principleItem p {
+    max-width: 230px;
+    font-size: 12px;
+  }
+
+  .principlesFooterText span {
+    font-size: 10px;
+    letter-spacing: 2.4px;
+  }
+}
+
+/* ---------- Small Mobile ---------- */
+
+@media (max-width: 380px) {
+  .collectionHeader {
+    padding: 38px 24px 0;
+  }
+
+  .collectionHeader h1 {
+    font-size: 42px;
+  }
+
+  .collectionDescription {
+    font-size: 13px;
+  }
+
+  .products {
+    padding: 48px 24px 72px;
+  }
+
+  .grid {
+    gap: 30px 14px;
+  }
+
+  .grid h3 {
+    font-size: 18px !important;
+  }
+
+  .principlesSection {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

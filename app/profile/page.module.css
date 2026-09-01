@@ -1,0 +1,310 @@
+.page {
+  min-height: 100vh;
+  background: #fbf8f3;
+  color: #1f1f1f;
+}
+
+/* ---------- Account Header ---------- */
+
+.accountHeader {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 75px 70px 55px;
+  border-bottom: 1px solid #e8e4df;
+  box-sizing: border-box;
+}
+
+.eyebrow {
+  margin: 0 0 25px;
+
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 4px;
+
+  color: #77716b;
+  text-align: right;
+}
+
+.userBox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 30px;
+}
+
+.avatar {
+  flex: 0 0 auto;
+
+  width: 85px;
+  height: 85px;
+  border-radius: 50%;
+
+  background: #eee5db;
+}
+
+.userBox h1 {
+  margin: 0 0 18px;
+
+  font-family: "Bonnevarc", "Times New Roman", serif;
+  font-size: 58px;
+  font-weight: normal;
+  line-height: 1.05;
+
+  color: #202020;
+}
+
+.userBox p {
+  margin: 0 0 10px;
+
+  color: #6f6a65;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.userBox span {
+  color: #99918a;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ---------- Menu ---------- */
+
+.menu {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 70px;
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.card {
+  min-height: 150px;
+  background: #ffffff;
+
+  border: 1px solid #e8e4df;
+
+  text-decoration: none;
+  color: #1f1f1f;
+
+  padding: 30px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 26px;
+
+  transition: transform 0.35s ease, border-color 0.35s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: #d6cec4;
+}
+
+.icon {
+  color: #2f2f2f;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.card span {
+  font-family: "Bonnevarc", "Times New Roman", serif;
+  font-size: 28px;
+  font-weight: normal;
+  line-height: 1.35;
+
+  text-align: right;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* ---------- Logout ---------- */
+
+.logout {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 70px 70px;
+  box-sizing: border-box;
+}
+
+/* ---------- Tablet ---------- */
+
+@media (max-width: 900px) {
+  .accountHeader {
+    padding: 64px 24px 48px;
+  }
+
+  .eyebrow {
+    margin-bottom: 26px;
+    text-align: center;
+    letter-spacing: 4px;
+  }
+
+  .userBox {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+
+    text-align: center;
+  }
+
+  .avatar {
+    width: 76px;
+    height: 76px;
+    order: 1;
+  }
+
+  .userBox > div:last-child {
+    order: 2;
+  }
+
+  .userBox h1 {
+    margin-bottom: 18px;
+    font-size: 48px;
+    line-height: 1.05;
+  }
+
+  .userBox p {
+    max-width: 320px;
+    margin: 0 auto 12px;
+
+    font-size: 14px;
+    line-height: 1.9;
+  }
+
+  .userBox span {
+    font-size: 13px;
+  }
+
+  .menu {
+    padding: 48px 24px 54px;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .card {
+    min-height: 128px;
+    padding: 22px 20px;
+    gap: 22px;
+  }
+
+  .icon {
+    justify-content: center;
+  }
+
+  .card span {
+    font-size: 23px;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .logout {
+    padding: 0 24px 58px;
+  }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 480px) {
+  .accountHeader {
+    padding: 54px 30px 42px;
+  }
+
+  .eyebrow {
+    margin-bottom: 24px;
+
+    font-size: 10px;
+    letter-spacing: 4.5px;
+  }
+
+  .avatar {
+    width: 70px;
+    height: 70px;
+  }
+
+  .userBox h1 {
+    font-size: 42px;
+    margin-bottom: 16px;
+  }
+
+  .userBox p {
+    max-width: 260px;
+
+    font-size: 13px;
+    line-height: 1.85;
+  }
+
+  .userBox span {
+    font-size: 12.5px;
+  }
+
+  .menu {
+    padding: 42px 30px 48px;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    min-height: 112px;
+    padding: 20px 14px 18px;
+
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .icon {
+    justify-content: center;
+  }
+
+  .card span {
+    font-size: 20px;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  .logout {
+    padding: 0 30px 54px;
+  }
+}
+
+/* ---------- Small Mobile ---------- */
+
+@media (max-width: 380px) {
+  .accountHeader {
+    padding: 48px 24px 38px;
+  }
+
+  .userBox h1 {
+    font-size: 38px;
+  }
+
+  .menu {
+    padding: 38px 24px 44px;
+    gap: 14px;
+  }
+
+  .card {
+    min-height: 104px;
+    padding: 18px 12px 16px;
+  }
+
+  .card span {
+    font-size: 18px;
+  }
+
+  .logout {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

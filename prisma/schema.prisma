@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/**
+ * =========================================================
+ * ENUMS
+ * =========================================================
+ */
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+/**
+ * =========================================================
+ * USER
+ * =========================================================
+ */
+
+model User {
+  id                 Int                  @id @default(autoincrement())
+  phone              String               @unique
+  name               String?
+  role               UserRole             @default(CUSTOMER)
+  orderStatusHistory OrderStatusHistory[] @relation("OrderStatusChangedBy")
+
+  sessions Session[]
+  otpCodes OtpCode[]
+
+  orders    Order[]
+  favorites Favorite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/**
+ * =========================================================
+ * OTP
+ * =========================================================
+ */
+
+model OtpCode {
+  id Int @id @default(autoincrement())
+
+  phone        String
+  code         String
+  expiresAt    DateTime
+  used         Boolean @default(false)
+  attemptCount Int     @default(0)
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+}
+
+/**
+ * =========================================================
+ * SESSION
+ * =========================================================
+ */
+
+model Session {
+  id    String @id @default(cuid())
+  token String @unique
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/**
+ * =========================================================
+ * CATEGORY
+ * =========================================================
+ */
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  slug  String @unique
+  title String
+  image String
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/**
+ * =========================================================
+ * PRODUCT
+ * =========================================================
+ */
+
+model Product {
+  id Int @id @default(autoincrement())
+
+  slug String @unique
+  name String
+
+  shortDescription String?
+  fullDescription  String?
+
+  price Int
+
+  mainImage String
+  images    String @default("[]")
+
+  stock       Int     @default(0)
+  isAvailable Boolean @default(true)
+
+  tags String @default("[]")
+
+  material   String?
+  dimensions String?
+  weight     String?
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  orderItems OrderItem[]
+  favorites  Favorite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([isAvailable, stock])
+}
+
+/**
+ * =========================================================
+ * ORDER
+ * =========================================================
+ */
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  orderNumber   String               @unique
+  requestKey    String               @unique
+  statusHistory OrderStatusHistory[]
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+
+  recipientName  String
+  recipientPhone String
+  province       String
+  city           String
+  addressLine    String
+  postalCode     String
+
+  subtotalPrice  Int
+  shippingPrice  Int @default(0)
+  discountAmount Int @default(0)
+  totalPrice     Int
+
+  paymentProvider  String?
+  paymentAuthority String?
+  paymentReference String?
+  paidAt           DateTime?
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([status])
+  @@index([paymentStatus])
+}
+
+/**
+ * =========================================================
+ * ORDER ITEM
+ * =========================================================
+ */
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  productSlug  String
+  productName  String
+  productImage String?
+
+  quantity  Int
+  unitPrice Int
+  lineTotal Int
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+/**
+ * =========================================================
+ * FAVORITE
+ * =========================================================
+ */
+
+model Favorite {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([productId])
+}
+
+/**
+ * =========================================================
+ * ORDER STATUS HISTORY
+ * =========================================================
+ */
+
+model OrderStatusHistory {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fromStatus OrderStatus
+  toStatus   OrderStatus
+
+  changedByUserId Int?
+  changedByUser   User? @relation("OrderStatusChangedBy", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  note String?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([changedByUserId])
+}

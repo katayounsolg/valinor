@@ -1,0 +1,141 @@
+.card {
+  position: relative;
+  color: #1f1f1f;
+}
+
+.imageBox {
+  height: 460px;
+  background: #ffffff;
+  border: 1px solid #e8e4df;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.image {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  transition: transform 0.5s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.04);
+}
+
+.imageLink,
+.nameLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.favoriteButton {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #ddd6cf;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1f1f1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.favoriteActive {
+  background: #1f1f1f;
+  color: #ffffff;
+}
+
+.info {
+  padding-top: 20px;
+  text-align: left;
+  direction: ltr;
+}
+
+.info h3 {
+  margin: 0 0 8px;
+  font-family: "Bonnevarc", "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: normal;
+  line-height: 1.1;
+}
+
+.price {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #6f6a65;
+}
+
+.cartButton {
+  border: none;
+  border-bottom: 1px solid #1f1f1f;
+  background: transparent;
+  padding: 0 0 5px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #1f1f1f;
+  cursor: pointer;
+}
+.cartButtonAdded {
+  color: #8a6d3b;
+  border-bottom-color: #8a6d3b;
+}
+@media (max-width: 900px) {
+  .card {
+    min-height: auto;
+  }
+
+  .imageBox {
+    height: 260px;
+    aspect-ratio: auto;
+  }
+
+  .image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .info {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    min-height: auto;
+  }
+
+  .imageBox {
+    height: 205px;
+    aspect-ratio: auto;
+  }
+
+  .image {
+    object-fit: contain;
+  }
+
+  .info {
+    padding-top: 14px;
+  }
+
+  .nameLink h3 {
+    font-size: 19px !important;
+    line-height: 1.1 !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .imageBox {
+    height: 185px;
+  }
+
+  .nameLink h3 {
+    font-size: 18px !important;
+  }
+}

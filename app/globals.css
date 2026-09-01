@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Infant:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Infant:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,200;6..72,300;6..72,400&display=swap');
+
+@font-face {
+  font-family: "Bonnevarc";
+  src: url("/fonts/Bonnevarc.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --white: #ffffff;
+
+  --accent: #c08f8f;
+  --accent-light: #efdcdc;
+
+  --text: #2f2f2f;
+  --muted: #6e6a66;
+  --soft: #f7f4f1;
+
+  --border: #eae5e0;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+
+  --radius-card: 24px;
+  --radius-image: 28px;
+  --radius-input: 18px;
+  --radius-pill: 999px;
+
+  --container: 1320px;
+
+  --font-heading: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), Tahoma, Arial, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), var(--font-body), Tahoma, Arial, sans-serif;
+  font-weight: 400;
+}
+
+button {
+  font-weight: 500;
+}

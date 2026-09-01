@@ -1,0 +1,432 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #8a837d;
+}
+
+.title {
+  margin: 0;
+  color: #202020;
+  font-size: clamp(27px, 3vw, 38px);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.description {
+  margin: 0;
+  color: #746e68;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.backLink {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  color: #625c57;
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.backLink:hover {
+  color: #202020;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.7fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.panel {
+  border: 1px solid #e8e4df;
+  background: #fffdf9;
+}
+
+.panelHeader {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e8e4df;
+}
+
+.panelTitle {
+  margin: 0;
+  color: #202020;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.panelSub {
+  margin: 5px 0 0;
+  color: #8a837d;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.panelBody {
+  padding: 22px;
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.label {
+  color: #5f5954;
+  font-size: 11px;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  border: 1px solid #ded9d3;
+  border-radius: 0;
+  outline: none;
+  background: #fff;
+  color: #252220;
+  font: inherit;
+  font-size: 12px;
+  transition: border-color 150ms ease;
+}
+
+.input,
+.select {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.textarea {
+  min-height: 130px;
+  resize: vertical;
+  padding: 11px 12px;
+  line-height: 1.9;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: #9b938c;
+}
+
+.help {
+  margin: 0;
+  color: #98918b;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.imagePreview {
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e8e4df;
+  background: #f4f0eb;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.imageFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #aaa39c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px;
+}
+
+.statusBox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.statusLabel {
+  color: #615b56;
+  font-size: 11px;
+}
+
+.statusValue {
+  color: #202020;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.available {
+  color: #557055;
+}
+
+.unavailable {
+  color: #956363;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 22px;
+  border-top: 1px solid #e8e4df;
+}
+
+.saveButton {
+  min-height: 42px;
+  padding: 0 19px;
+  border: 1px solid #202020;
+  border-radius: 0;
+  background: #202020;
+  color: #fbf8f3;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.saveButton:hover {
+  background: #383432;
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelLink {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid #ded9d3;
+  color: #625c57;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.cancelLink:hover {
+  border-color: #bdb6af;
+  color: #202020;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side {
+    order: -1;
+  }
+
+  .imagePreview {
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 680px) {
+  .page {
+    gap: 20px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .gridTwo {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldFull {
+    grid-column: auto;
+  }
+
+  .panelHeader,
+  .panelBody {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .actions {
+    padding: 16px;
+    flex-direction: column;
+  }
+
+  .saveButton,
+  .cancelLink {
+    width: 100%;
+  }
+}
+.dangerZone {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dangerTitle {
+  margin: 0;
+  color: #8f5555;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dangerText {
+  margin: 0;
+  color: #817a74;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.deleteButton {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #b77a7a;
+  border-radius: 0;
+  background: transparent;
+  color: #935757;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.deleteButton:hover {
+  border-color: #935757;
+  background: #935757;
+  color: #fff;
+}
+
+.deleteButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.deleteConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.deleteConfirmText {
+  margin: 0;
+  color: #6f6862;
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  gap: 8px;
+}
+
+.deleteConfirmButton {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #935757;
+  border-radius: 0;
+  background: #935757;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.deleteConfirmButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.deleteCancelButton {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #ded9d3;
+  border-radius: 0;
+  background: transparent;
+  color: #625c57;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.deleteCancelButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 680px) {
+  .deleteConfirmActions {
+    flex-direction: column;
+  }
+
+  .deleteButton,
+  .deleteConfirmButton,
+  .deleteCancelButton {
+    width: 100%;
+  }
+}
