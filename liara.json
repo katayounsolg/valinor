@@ -1,0 +1,6 @@
+{
+  "platform": "node",
+  "nodeVersion": "20",
+  "build": "npm run build",
+  "start": "npm start"
+}
