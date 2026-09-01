@@ -44,3 +44,6 @@ next-env.d.ts
 # local database files
 dev.db
 *.db
+# local sqlite database
+*.db
+*.db
