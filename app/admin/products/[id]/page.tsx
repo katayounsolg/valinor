@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/app/lib/prisma";
 import ProductEditFormClient from "./ProductEditFormClient";
 import styles from "./page.module.css";
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{

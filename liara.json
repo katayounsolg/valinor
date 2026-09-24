@@ -1,6 +1,13 @@
 {
-  "platform": "node",
-  "nodeVersion": "20",
-  "build": "npm run build",
-  "start": "npm start"
+  "app": "valinor",
+  "port": 3000,
+  "build": {
+    "location": "iran"
+  },
+  "disks": [
+    {
+      "name": "valinor-data",
+      "mountTo": "/data"
+    }
+  ]
 }

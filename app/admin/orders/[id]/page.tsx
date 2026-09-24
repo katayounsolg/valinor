@@ -5,7 +5,7 @@ import OrderStatusControl from "./OrderStatusControlClient";
 
 import { prisma } from "@/app/lib/prisma";
 import styles from "./page.module.css";
-
+export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{
     id: string;

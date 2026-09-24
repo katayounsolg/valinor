@@ -3,6 +3,7 @@ import { ArrowLeft, Inbox } from "lucide-react";
 
 import { prisma } from "@/app/lib/prisma";
 import styles from "./page.module.css";
+export const dynamic = "force-dynamic";
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("fa-IR").format(value);

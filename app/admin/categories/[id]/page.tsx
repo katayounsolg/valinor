@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/app/lib/prisma";
 import CategoryEditFormClient from "./CategoryEditFormClient";
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{

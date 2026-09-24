@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  FormEvent,
-  useState,
-} from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 
 import ImageUploaderClient from "@/app/admin/components/ImageUploaderClient";
 import styles from "./page.module.css";
@@ -13,55 +11,32 @@ import styles from "./page.module.css";
 export default function CategoryCreateFormClient() {
   const router = useRouter();
 
-  const [title, setTitle] =
-    useState("");
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [image, setImage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const [slug, setSlug] =
-    useState("");
-
-  const [image, setImage] =
-    useState("");
-
-  const [submitting, setSubmitting] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (submitting) {
       return;
     }
 
-    const cleanTitle =
-      title.trim();
+    const cleanTitle = title.trim();
+    const cleanSlug = slug.trim();
+    const cleanImage = image.trim();
 
-    const cleanSlug =
-      slug.trim();
-
-    const cleanImage =
-      image.trim();
-
-    if (
-      cleanTitle.length < 2 ||
-      cleanTitle.length > 120
-    ) {
-      setError(
-        "عنوان دسته‌بندی باید بین ۲ تا ۱۲۰ کاراکتر باشد."
-      );
+    if (cleanTitle.length < 2 || cleanTitle.length > 120) {
+      setError("عنوان دسته‌بندی باید بین ۲ تا ۱۲۰ کاراکتر باشد.");
       return;
     }
 
     if (
       cleanSlug.length < 2 ||
       cleanSlug.length > 120 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-        cleanSlug
-      )
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cleanSlug)
     ) {
       setError(
         "Slug معتبر نیست. فقط حروف انگلیسی کوچک، عدد و خط تیره مجاز است."
@@ -70,9 +45,7 @@ export default function CategoryCreateFormClient() {
     }
 
     if (!cleanImage) {
-      setError(
-        "ابتدا تصویر دسته‌بندی را آپلود کنید."
-      );
+      setError("ابتدا تصویر دسته‌بندی را آپلود کنید.");
       return;
     }
 
@@ -80,32 +53,24 @@ export default function CategoryCreateFormClient() {
       setSubmitting(true);
       setError("");
 
-      const response = await fetch(
-        "/api/admin/categories",
-        {
-          method: "POST",
+      const response = await fetch("/api/admin/categories", {
+        method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-          body: JSON.stringify({
-            title: cleanTitle,
-            slug: cleanSlug,
-            image: cleanImage,
-          }),
-        }
-      );
+        body: JSON.stringify({
+          title: cleanTitle,
+          slug: cleanSlug,
+          image: cleanImage,
+        }),
+      });
 
-      const data = await response
-        .json()
-        .catch(() => null);
+      const data = await response.json().catch(() => null);
 
       if (!data) {
-        setError(
-          "پاسخ نامعتبر از سرور دریافت شد."
-        );
+        setError("پاسخ نامعتبر از سرور دریافت شد.");
         return;
       }
 
@@ -114,97 +79,47 @@ export default function CategoryCreateFormClient() {
         return;
       }
 
-      if (
-        !response.ok ||
-        !data.success
-      ) {
-        setError(
-          data.message ||
-            "افزودن دسته‌بندی انجام نشد."
-        );
+      if (!response.ok || !data.success) {
+        setError(data.message || "افزودن دسته‌بندی انجام نشد.");
         return;
       }
 
-      router.push(
-        `/admin/categories/${data.category.id}`
-      );
-
+      router.push(`/admin/categories/${data.category.id}`);
       router.refresh();
     } catch (error) {
-      console.error(
-        "Category creation failed:",
-        error
-      );
+      console.error("Category creation failed:", error);
 
-      setError(
-        "ارتباط با سرور برقرار نشد. دوباره تلاش کنید."
-      );
+      setError("ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form
-      className={styles.formGrid}
-      onSubmit={handleSubmit}
-    >
+    <form className={styles.formGrid} onSubmit={handleSubmit}>
       <div className={styles.main}>
-        <article
-          className={styles.panel}
-        >
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              اطلاعات دسته‌بندی
-            </h2>
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>اطلاعات دسته‌بندی</h2>
 
-            <p
-              className={
-                styles.panelSub
-              }
-            >
-              عنوان و آدرس دسته‌بندی را
-              مشخص کنید.
+            <p className={styles.panelSub}>
+              عنوان و آدرس دسته‌بندی را مشخص کنید.
             </p>
           </header>
 
-          <div
-            className={
-              styles.panelBody
-            }
-          >
-            <div
-              className={styles.fields}
-            >
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  عنوان دسته‌بندی
-                </span>
+          <div className={styles.panelBody}>
+            <div className={styles.fields}>
+              <label className={styles.field}>
+                <span className={styles.label}>عنوان دسته‌بندی</span>
 
                 <input
                   type="text"
-                  className={
-                    styles.input
-                  }
+                  className={styles.input}
                   value={title}
                   maxLength={120}
                   disabled={submitting}
                   onChange={(event) => {
-                    setTitle(
-                      event.target.value
-                    );
+                    setTitle(event.target.value);
 
                     if (error) {
                       setError("");
@@ -213,14 +128,8 @@ export default function CategoryCreateFormClient() {
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  Slug
-                </span>
+              <label className={styles.field}>
+                <span className={styles.label}>Slug</span>
 
                 <input
                   type="text"
@@ -231,9 +140,7 @@ export default function CategoryCreateFormClient() {
                   disabled={submitting}
                   placeholder="leather-bags"
                   onChange={(event) => {
-                    setSlug(
-                      event.target.value
-                    );
+                    setSlug(event.target.value);
 
                     if (error) {
                       setError("");
@@ -241,81 +148,45 @@ export default function CategoryCreateFormClient() {
                   }}
                 />
 
-                <p
-                  className={styles.help}
-                >
-                  فقط حروف انگلیسی کوچک،
-                  عدد و خط تیره.
+                <p className={styles.help}>
+                  فقط حروف انگلیسی کوچک، عدد و خط تیره.
                 </p>
               </label>
             </div>
           </div>
 
-          <div
-            className={styles.actions}
-          >
+          <div className={styles.actions}>
             <Link
               href="/admin/categories"
-              className={
-                styles.cancelLink
-              }
+              className={styles.cancelLink}
             >
               انصراف
             </Link>
 
             <button
               type="submit"
-              className={
-                styles.saveButton
-              }
+              className={styles.saveButton}
               disabled={submitting}
             >
-              {submitting
-                ? "در حال افزودن..."
-                : "افزودن دسته‌بندی"}
+              {submitting ? "در حال افزودن..." : "افزودن دسته‌بندی"}
             </button>
           </div>
         </article>
 
-        {error && (
-          <p className={styles.message}>
-            {error}
-          </p>
-        )}
+        {error && <p className={styles.message}>{error}</p>}
       </div>
 
       <aside className={styles.side}>
-        <article
-          className={styles.panel}
-        >
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              تصویر دسته‌بندی
-            </h2>
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>تصویر دسته‌بندی</h2>
 
-            <p
-              className={
-                styles.panelSub
-              }
-            >
-              تصویر مستقیماً در فضای ابری
-              Valinor ذخیره می‌شود.
+            <p className={styles.panelSub}>
+              تصویر مستقیماً در فضای ابری Valinor ذخیره می‌شود.
             </p>
           </header>
 
-          <div
-            className={
-              styles.panelBody
-            }
-          >
+          <div className={styles.panelBody}>
             <ImageUploaderClient
               value={image}
               scope="categories"
