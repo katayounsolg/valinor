@@ -1,3 +1,4 @@
+
 {
   "name": "valinor-shop",
   "version": "0.1.0",
@@ -6,7 +7,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "prisma generate --no-hints && next build",
-    "start": "next start",
+    "start": "prisma migrate deploy && next start",
     "lint": "eslint"
   },
   "dependencies": {
