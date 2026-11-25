@@ -1,9 +1,11 @@
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/app/lib/prisma";
 import CategoryEditFormClient from "./CategoryEditFormClient";
+
 export const dynamic = "force-dynamic";
 
 type Props = {
@@ -26,25 +28,25 @@ export default async function AdminCategoryEditPage({
     notFound();
   }
 
-  const category =
-    await prisma.category.findUnique({
-      where: {
-        id: categoryId,
-      },
+  const category = await prisma.category.findUnique({
+    where: {
+      id: categoryId,
+    },
 
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        image: true,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      image: true,
+      objectGroupId: true,
 
-        _count: {
-          select: {
-            products: true,
-          },
+      _count: {
+        select: {
+          products: true,
         },
       },
-    });
+    },
+  });
 
   if (!category) {
     notFound();
@@ -124,8 +126,8 @@ export default async function AdminCategoryEditPage({
           title: category.title,
           slug: category.slug,
           image: category.image,
-          productCount:
-            category._count.products,
+          objectGroupId: category.objectGroupId,
+          productCount: category._count.products,
         }}
       />
     </div>

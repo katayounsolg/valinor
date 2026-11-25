@@ -1,9 +1,11 @@
+
 import Link from "next/link";
 import {
   LayoutDashboard,
   ShoppingBag,
   Package,
   FolderTree,
+  Layers3,
   Users,
   Settings,
   Store,
@@ -108,6 +110,20 @@ export default async function AdminLayout({
           </Link>
 
           <Link
+            href="/admin/object-groups"
+            className={styles.navLink}
+          >
+            <span className={styles.navIcon}>
+              <Layers3
+                size={19}
+                strokeWidth={1.35}
+              />
+            </span>
+
+            <span>گروه‌های محصولات</span>
+          </Link>
+
+          <Link
             href="/admin/categories"
             className={styles.navLink}
           >
@@ -168,20 +184,14 @@ export default async function AdminLayout({
 
         <div className={styles.sidebarFooter}>
           <div className={styles.adminCard}>
-            <div
-              className={styles.adminAvatar}
-            />
+            <div className={styles.adminAvatar} />
 
             <div className={styles.adminInfo}>
-              <span
-                className={styles.adminName}
-              >
+              <span className={styles.adminName}>
                 {user.name || "مدیر والینور"}
               </span>
 
-              <span
-                className={styles.adminRole}
-              >
+              <span className={styles.adminRole}>
                 ADMIN
               </span>
             </div>
@@ -199,34 +209,20 @@ export default async function AdminLayout({
       {/* Main area */}
       <div className={styles.main}>
         <header className={styles.topbar}>
-          <div
-            className={styles.topbarTitle}
-          >
-            <p
-              className={
-                styles.topbarEyebrow
-              }
-            >
+          <div className={styles.topbarTitle}>
+            <p className={styles.topbarEyebrow}>
               VALINOR / ADMIN
             </p>
 
-            <h2
-              className={
-                styles.topbarHeading
-              }
-            >
+            <h2 className={styles.topbarHeading}>
               پنل مدیریت
             </h2>
           </div>
 
-          <div
-            className={styles.topbarActions}
-          >
+          <div className={styles.topbarActions}>
             <Link
               href="/"
-              className={
-                styles.topbarButton
-              }
+              className={styles.topbarButton}
               aria-label="مشاهده فروشگاه"
               title="مشاهده فروشگاه"
             >

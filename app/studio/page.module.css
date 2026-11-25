@@ -1,0 +1,128 @@
+.page {
+  min-height: 100vh;
+  background: #fbf8f3;
+  color: #202020;
+}
+
+.content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 100px 70px 130px;
+}
+
+.heading {
+  margin-bottom: 90px;
+  text-align: center;
+}
+
+.eyebrow,
+.storyNumber,
+.contactLabel {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: #6f6a65;
+}
+
+.eyebrow { margin: 0 0 23px; }
+
+.title,
+.contactTitle {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -1.3px;
+}
+
+.title { font-size: clamp(54px, 7vw, 100px); line-height: 1.06; }
+
+.tagline {
+  margin: 23px 0 0;
+  color: #6f6a65;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(16px, 2vw, 22px);
+  line-height: 1.5;
+}
+
+.story { display: flex; flex-direction: column; gap: 90px; }
+
+.storyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(35px, 6vw, 100px);
+}
+
+.imagePlaceholder {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: #eee9e2;
+  border: 1px solid #e8e4df;
+}
+
+.storyText { display: flex; flex-direction: column; align-items: flex-start; }
+.storyNumber { display: block; margin-bottom: 24px; }
+
+.storyText h2 {
+  max-width: 410px;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(30px, 3.4vw, 52px);
+  line-height: 1.16;
+  letter-spacing: -0.5px;
+}
+
+.storyText p {
+  margin: 24px 0 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #6f6a65;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.contact {
+  margin-top: 140px;
+  padding-top: 46px;
+  border-top: 1px solid #e8e4df;
+}
+
+.contactTitle { font-size: clamp(40px, 5vw, 64px); line-height: 1.1; }
+.contactGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 35px; margin-top: 52px; }
+.contactItem { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.contactLink {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #202020;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(19px, 2.4vw, 27px);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 4px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.contactLink:hover, .contactLink:focus-visible { color: #a77474; border-bottom-color: #c08f8f; }
+
+@media (max-width: 900px) {
+  .content { padding: 76px 34px 100px; }
+  .heading { margin-bottom: 65px; }
+  .story { gap: 60px; }
+  .storyRow { gap: 28px; }
+  .contact { margin-top: 100px; }
+}
+
+@media (max-width: 600px) {
+  .content { padding: 60px 22px 85px; }
+  .heading { margin-bottom: 48px; }
+  .eyebrow, .storyNumber, .contactLabel { font-size: 9px; }
+  .story { gap: 55px; }
+  .storyRow { grid-template-columns: 1fr; gap: 26px; }
+  .imagePlaceholder { aspect-ratio: 4 / 3; }
+  .storyRowReverse .storyText { order: 2; }
+  .storyRowReverse .imagePlaceholder { order: 1; }
+  .storyNumber { margin-bottom: 15px; }
+  .storyText p { margin-top: 15px; font-size: 14px; }
+  .contact { margin-top: 84px; padding-top: 34px; }
+  .contactGrid { grid-template-columns: 1fr; gap: 36px; margin-top: 36px; }
+}

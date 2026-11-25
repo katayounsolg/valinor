@@ -13,6 +13,7 @@ type ProductCardProps = {
   price: number;
   slug: string;
   displayName?: string;
+  materialAndSize?: string;
   hidePrice?: boolean;
   hideAddToCart?: boolean;
   hideFavorite?: boolean;
@@ -27,6 +28,7 @@ export default function ProductCard({
   price,
   slug,
   displayName,
+  materialAndSize,
   hidePrice = false,
   hideAddToCart = false,
   hideFavorite = false,
@@ -99,6 +101,7 @@ export default function ProductCard({
             ? {
                 paddingTop: "20px",
                 textAlign: "left",
+                direction: "ltr",
               }
             : undefined
         }
@@ -109,9 +112,9 @@ export default function ProductCard({
               serifName
                 ? {
                     fontFamily: '"Times New Roman", Georgia, serif',
-                    fontSize: "26px",
+                    fontSize: "28px",
                     fontWeight: 400,
-                    lineHeight: 1.1,
+                    lineHeight: 1.12,
                     margin: 0,
                     color: "#202020",
                   }
@@ -122,15 +125,62 @@ export default function ProductCard({
           </h3>
         </Link>
 
+        {materialAndSize && (
+          <p
+            dir="ltr"
+            style={{
+              margin: "9px 0 0",
+              fontSize: "14px",
+              fontWeight: 400,
+              lineHeight: 1.4,
+              color: "#34312e",
+              textAlign: "left",
+            }}
+          >
+            {materialAndSize}
+          </p>
+        )}
+
         {!hidePrice && (
-          <p className={styles.price}>{price.toLocaleString("fa-IR")} تومان</p>
+          <p
+            className={styles.price}
+            style={
+              editorialCard
+                ? {
+                    margin: "7px 0 18px",
+                    fontSize: "12px",
+                    fontWeight: 400,
+                    color: "#96908a",
+                    textAlign: "left",
+                  }
+                : undefined
+            }
+          >
+            {price.toLocaleString("fa-IR")} تومان
+          </p>
         )}
 
         {!hideAddToCart && (
           <button
+            type="button"
             className={`${styles.cartButton} ${
               added ? styles.cartButtonAdded : ""
             }`}
+            style={
+              editorialCard
+                ? {
+                    width: "100%",
+                    background: "#202020",
+                    color: "#ffffff",
+                    border: "1px solid #202020",
+                    borderRadius: 0,
+                    padding: "13px 12px",
+                    fontSize: "12px",
+                    letterSpacing: "1.1px",
+                    cursor: "pointer",
+                  }
+                : undefined
+            }
             onClick={() => {
               addToCart({
                 slug,
@@ -138,11 +188,10 @@ export default function ProductCard({
                 image,
                 price,
               });
-
               setAdded(true);
             }}
           >
-            {added ? "ADDED TO CART" : "ADD TO CART"}
+            {added ? "ADDED TO BAG" : "ADD TO BAG"}
           </button>
         )}
       </div>

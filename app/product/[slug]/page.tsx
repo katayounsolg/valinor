@@ -1,26 +1,39 @@
+
 import AddToCartButton from "@/app/components/AddToCartButton";
 import Header from "@/app/components/Header";
+import ProductGallery from "./ProductGallery";
 import { productService } from "@/src/services/product.service";
 import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 
 type Props = {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<{ slug: string }>;
 };
 
-function getSeriesName(categoryTitle: string) {
-  const titleMap: Record<string, string> = {
-    "قفل ثابت": "PALETTE SERIES",
-    "قفل متحرک": "MONO SERIES",
-    "مینی": "JOURNAL & JUNIOR",
-    "بافت": "MOSAIC SERIES",
-    "برش": "REVEALED SERIES",
-    "تکه": "ORIGIN SERIES",
+type SeriesInfo = {
+  name: string;
+  tagline: string;
+};
+
+function getSeriesInfo(categoryTitle: string): SeriesInfo {
+  const seriesMap: Record<string, SeriesInfo> = {
+    "قفل ثابت": { name: "Palette", tagline: "Soft tones." },
+    "قفل متحرک": { name: "Mono", tagline: "One piece." },
+    "مینی": { name: "Journal & Junior", tagline: "Hand binding." },
+    "بافت": { name: "Mosaic", tagline: "Pieces become something new." },
+    "برش": {
+      name: "Revealed",
+      tagline: "Precision in every cut and edge.",
+    },
+    "تکه": { name: "Origin", tagline: "Timeless leather." },
   };
 
-  return titleMap[categoryTitle] || "VALINOR OBJECT";
+  return (
+    seriesMap[categoryTitle] || {
+      name: categoryTitle || "Valinor",
+      tagline: "Designed to be kept.",
+    }
+  );
 }
 
 function getEnglishObjectName(slug: string, fallbackName: string) {
@@ -40,6 +53,52 @@ function getEnglishObjectName(slug: string, fallbackName: string) {
   return nameMap[slug] || fallbackName;
 }
 
+/**
+ * تبدیل تصاویر ذخیره‌شده در دیتابیس به آرایه
+ */
+function parseProductImages(images: unknown): string[] {
+  if (Array.isArray(images)) {
+    return images.filter(
+      (image): image is string =>
+        typeof image === "string" && image.trim().length > 0
+    );
+  }
+
+  if (typeof images !== "string" || !images.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(images);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(
+      (image): image is string =>
+        typeof image === "string" && image.trim().length > 0
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * نمایش متن چندخطی واردشده در داشبورد
+ */
+function ContentText({
+  content,
+}: {
+  content: string;
+}) {
+  return (
+    <div style={{ whiteSpace: "pre-line" }}>
+      {content}
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
 
@@ -49,105 +108,174 @@ export default async function ProductDetailPage({ params }: Props) {
     notFound();
   }
 
-  const seriesName = getSeriesName(product.category.title);
-  const objectName = getEnglishObjectName(product.slug, product.name);
+  // اطلاعات مجموعه
+  const defaultSeries = getSeriesInfo(product.category.title);
+
+  const seriesName =
+    product.seriesTitle?.trim() || defaultSeries.name;
+
+  const seriesTagline =
+    product.seriesTagline?.trim() || defaultSeries.tagline;
+
+  // نام انگلیسی محصول
+  const objectName =
+    product.englishName?.trim() ||
+    getEnglishObjectName(product.slug, product.name);
+
+  // تصاویر محصول با حفظ ترتیب
+  const additionalImages = parseProductImages(product.images);
+
+  const images = [
+    product.mainImage,
+    ...additionalImages.filter(
+      (image) => image !== product.mainImage
+    ),
+  ].slice(0, 6);
+
+  // متن‌های اختصاصی داشبورد
+  const leftDescription =
+    product.leftDescription?.trim() ||
+    "An object designed to bring calm to everyday routines. Carefully crafted in leather, it balances purposeful details, lasting materials, and a quiet, timeless character.";
+
+  const detailsContent =
+    product.detailsContent?.trim() || "";
+
+  const shippingContent =
+    product.shippingContent?.trim() || "";
+
+  const rightDescription =
+    product.shortDescription?.trim() ||
+    "A thoughtfully made leather object, created for everyday use and designed to age beautifully.";
 
   return (
     <main className={styles.page}>
       <Header />
 
       <section className={styles.productShell} dir="ltr">
-        <div className={styles.galleryColumn}>
-          <div className={styles.mainImageBox}>
-            <img
-              src={product.mainImage}
-              alt={objectName}
-              className={styles.mainImage}
-            />
+
+        {/* ستون سمت چپ */}
+        <aside className={styles.editorialColumn}>
+
+          <div className={styles.editorialDescription}>
+            <ContentText content={leftDescription} />
           </div>
 
-          <div className={styles.thumbnails}>
-            <button type="button" className={styles.thumbnail}>
-              <img src={product.mainImage} alt={objectName} />
-            </button>
+          <div className={styles.accordionGroup}>
 
-            <button type="button" className={styles.thumbnail}>
-              <img src={product.mainImage} alt={objectName} />
-            </button>
+            {/* DETAILS */}
+            <details className={styles.accordionItem}>
+              <summary className={styles.accordionTrigger}>
+                <span>DETAILS</span>
+                <span
+                  className={styles.accordionChevron}
+                  aria-hidden="true"
+                />
+              </summary>
 
-            <button type="button" className={styles.thumbnail}>
-              <img src={product.mainImage} alt={objectName} />
-            </button>
+              <div className={styles.accordionContent}>
+                {detailsContent ? (
+                  <ContentText content={detailsContent} />
+                ) : (
+                  <ul className={styles.detailsList}>
+                    {product.material && (
+                      <li>Material: {product.material}</li>
+                    )}
 
-            <button type="button" className={styles.thumbnail}>
-              <img src={product.mainImage} alt={objectName} />
-            </button>
+                    {product.dimensions && (
+                      <li>Dimensions: {product.dimensions}</li>
+                    )}
+
+                    {product.weight && (
+                      <li>Weight: {product.weight}</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+            </details>
+
+            {/* PREPARATION & SHIPPING */}
+            <details className={styles.accordionItem}>
+              <summary className={styles.accordionTrigger}>
+                <span>PREPARATION &amp; SHIPPING</span>
+                <span
+                  className={styles.accordionChevron}
+                  aria-hidden="true"
+                />
+              </summary>
+
+              <div className={styles.accordionContent}>
+                {shippingContent ? (
+                  <ContentText content={shippingContent} />
+                ) : (
+                  <>
+                    <p>
+                      Orders are prepared within a maximum of 7 working days.
+                    </p>
+                    <p>
+                      We ship to all locations across Iran.
+                    </p>
+                  </>
+                )}
+              </div>
+            </details>
+
           </div>
-        </div>
+        </aside>
 
+        {/* گالری تصاویر */}
+        <ProductGallery
+          images={images}
+          alt={objectName}
+        />
+
+        {/* ستون سمت راست */}
         <aside className={styles.infoColumn} dir="ltr">
-          <p className={styles.series}>{seriesName}</p>
 
-          <p className={styles.objectNumber}>Object No. 01</p>
+          <p className={styles.objectNumber}>
+            {objectName}
+          </p>
 
-          <h1>{objectName}</h1>
+          <h1 className={styles.seriesTitle}>
+            {seriesName}
+          </h1>
 
           <p className={styles.shortLine}>
-            Built for quiet daily rituals.
+            {seriesTagline}
           </p>
 
           <p className={styles.description}>
-            {product.shortDescription ||
-              "A handmade leather object shaped through material, proportion, and deliberate construction."}
+            {rightDescription}
           </p>
 
-          <div className={styles.divider}></div>
+          {/* قیمت و خرید */}
+          <div className={styles.purchaseArea}>
 
-          <strong className={styles.price}>
-            {product.price.toLocaleString("fa-IR")} تومان
-          </strong>
+            <p className={styles.price}>
+              {product.price.toLocaleString("fa-IR")} تومان
+            </p>
 
-          <div className={styles.optionBlock}>
-            <p className={styles.optionLabel}>SELECT SIZE</p>
+            {product.stock > 0 && product.isAvailable ? (
+              <div className={styles.addToCartWrapper}>
+                <AddToCartButton
+                  slug={product.slug}
+                  name={product.name}
+                  image={product.mainImage}
+                  price={product.price}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className={styles.disabledButton}
+              >
+                SOLD OUT
+              </button>
+            )}
 
-            <div className={styles.sizeGrid}>
-              <button type="button">A5</button>
-              <button type="button">B6</button>
-            </div>
-          </div>
-
-          <div className={styles.stockRow}>
-            <span>LIMITED EDITION</span>
-
-            <span className={product.stock > 0 ? styles.inStock : styles.outStock}>
-              {product.stock > 0 ? `${product.stock} AVAILABLE` : "SOLD OUT"}
-            </span>
-          </div>
-
-          {product.stock > 0 ? (
-            <div className={styles.addToCartWrapper}>
-              <AddToCartButton
-                slug={product.slug}
-                name={product.name}
-                image={product.mainImage}
-                price={product.price}
-              />
-            </div>
-          ) : (
-            <button type="button" disabled className={styles.disabledButton}>
-              ناموجود
-            </button>
-          )}
-
-          <button type="button" className={styles.saveButton}>
-            Save
-          </button>
-
-          <div className={styles.notes}>
-            <p>Free shipping will be calculated at checkout.</p>
-            <p>Crafted to order. Ships in 5–7 business days.</p>
           </div>
         </aside>
+
       </section>
     </main>
   );

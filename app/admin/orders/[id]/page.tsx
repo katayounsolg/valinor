@@ -163,6 +163,39 @@ export default async function AdminOrderDetailPage({
         </Link>
       </header>
 
+      {/* INSTAGRAM ORDER REFERENCE */}
+      <section
+        className={styles.panel}
+        aria-label="کد پیگیری سفارش و هماهنگی اینستاگرامی"
+        style={{ padding: "22px", marginBottom: "24px" }}
+      >
+        <p className={styles.panelSub}>
+          کد پیگیری برای هماهنگی در اینستاگرام
+        </p>
+        <p
+          dir="ltr"
+          style={{
+            fontSize: "clamp(18px, 2.5vw, 26px)",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            overflowWrap: "anywhere",
+            margin: "12px 0",
+          }}
+        >
+          {order.orderNumber}
+        </p>
+        <p className={styles.panelSub}>
+          مشتری این کد را در دایرکت اینستاگرام والینور ارسال می‌کند.
+          این کد را با پیام مشتری تطبیق دهید و سپس اطلاعات سفارش
+          و وضعیت هماهنگی مالی را بررسی کنید.
+        </p>
+        {order.paymentStatus !== "PAID" && (
+          <p className={styles.panelSub} style={{ marginTop: "10px" }}>
+            توجه: دریافت کد یا پیام اینستاگرام به معنی تأیید پرداخت نیست.
+          </p>
+        )}
+      </section>
+
       {/* STATUS */}
       <section className={styles.statusGrid}>
         <article className={styles.statusCard}>
@@ -476,46 +509,36 @@ export default async function AdminOrderDetailPage({
             </div>
           </article>
 
-          {/* ACCOUNT */}
+          {/* ORDER TYPE */}
           <article className={styles.panel}>
             <header className={styles.panelHeader}>
               <div>
                 <h2 className={styles.panelTitle}>
-                  حساب مشتری
+                  روش ثبت سفارش
                 </h2>
-
                 <p className={styles.panelSub}>
-                  کاربری که سفارش را ثبت کرده
+                  سفارش مهمان بدون نیاز به ورود مشتری
                 </p>
               </div>
             </header>
 
             <div className={styles.infoList}>
               <div className={styles.infoRow}>
-                <span
-                  className={styles.infoLabel}
-                >
-                  نام حساب
+                <span className={styles.infoLabel}>
+                  نوع سفارش
                 </span>
-
-                <span
-                  className={styles.infoValue}
-                >
-                  {order.user.name || "بدون نام"}
+                <span className={styles.infoValue}>
+                  {order.userId === null
+                    ? "خرید مهمان"
+                    : "سفارش با حساب کاربری"}
                 </span>
               </div>
-
               <div className={styles.infoRow}>
-                <span
-                  className={styles.infoLabel}
-                >
-                  شماره حساب
+                <span className={styles.infoLabel}>
+                  پیگیری مشتری
                 </span>
-
-                <span
-                  className={`${styles.infoValue} ${styles.infoValueLtr}`}
-                >
-                  {order.user.phone}
+                <span className={styles.infoValue}>
+                  کد سفارش در دایرکت اینستاگرام
                 </span>
               </div>
             </div>

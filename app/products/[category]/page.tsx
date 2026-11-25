@@ -1,3 +1,4 @@
+
 import Header from "@/app/components/Header";
 import ProductCard from "@/app/components/ProductCard";
 import { productService } from "@/src/services/product.service";
@@ -58,90 +59,21 @@ function getCollectionInfo(slug: string): CollectionInfo {
   );
 }
 
-const collectionProductNames: Record<string, string[]> = {
-  sabet: [
-    "Blue Veil",
-    "Plum Dusk",
-    "Lilac Haze",
-    "Pistachio Mist",
-    "Silver Ash",
-    "Taupe Ground",
-    "Rose Bloom",
-    "Apricot Nude",
-    "Cream Linen",
-    "Butter Light",
-  ],
-
-  mini: [
-    "Sky Token",
-    "Violet Charm",
-    "Pebble Note",
-    "Mint Keepsake",
-    "Ivory Pocket",
-    "Wisteria Loop",
-    "Blush Key",
-    "Lemon Drop",
-    "Drift Tag",
-  ],
-
-  moteharek: [
-    "Azure Spine",
-    "Linen Fold",
-    "Midnight Plane",
-    "Mauve Edge",
-    "Vermilion Strip",
-    "Silver Quiet",
-    "Sage Panel",
-    "Roseate Side",
-    "Ochre Line",
-  ],
-
-  baft: [
-    "Cacao Tessera",
-    "Teal Ladder",
-    "Forest Braid",
-    "Flint Grid",
-    "Umber Lattice",
-    "Ember Matrix",
-    "Navy Shard",
-    "Onyx Stitch",
-  ],
-
-  boresh: [
-    "Ancient Marks",
-    "Crimson Mask",
-    "Night Wing",
-    "Ink Trace",
-    "Lotus Script",
-  ],
-
-  tikeh: [
-    "Tide",
-    "Twin",
-    "Morning",
-    "Balloon",
-    "Profile",
-  ],
-};
-
-function getDisplayName(categorySlug: string, index: number) {
-  return collectionProductNames[categorySlug]?.[index] || `Object ${index + 1}`;
-}
-
 export default async function CategoryPage({ params }: Props) {
   const { category: categorySlug } = await params;
 
-  const category = await productService.getCategoryBySlug(categorySlug);
+  const category =
+    await productService.getCategoryBySlug(categorySlug);
 
   if (!category) {
     notFound();
   }
 
-  const categoryProducts = await productService.getProductsByCategory(
-    categorySlug
-  );
+  const categoryProducts =
+    await productService.getProductsByCategory(categorySlug);
 
-  const collectionInfo = getCollectionInfo(categorySlug);
+  const collectionInfo =
+    getCollectionInfo(categorySlug);
 
   const isEditorialCollection = [
     "sabet",
@@ -159,7 +91,9 @@ export default async function CategoryPage({ params }: Props) {
       <section className={styles.collectionHeader}>
         <div className={styles.collectionHeaderInner}>
           <div className={styles.collectionHeaderText}>
-            <p className={styles.collectionEyebrow}>VALINOR COLLECTION</p>
+            <p className={styles.collectionEyebrow}>
+              VALINOR COLLECTION
+            </p>
 
             <h1>{collectionInfo.title}</h1>
 
@@ -170,28 +104,25 @@ export default async function CategoryPage({ params }: Props) {
 
           <div className={styles.collectionMetaPanel}>
             <span>COLLECTION</span>
-            <span>{categoryProducts.length} VARIATIONS</span>
+            <span>
+              {categoryProducts.length} VARIATIONS
+            </span>
           </div>
         </div>
       </section>
 
       <section className={styles.products} dir="rtl">
         <div className={styles.grid}>
-          {categoryProducts.map((product, index) => (
+          {categoryProducts.map((product) => (
             <ProductCard
               key={product.id}
               id={product.id}
               slug={product.slug}
               name={product.name}
-              displayName={
-                isEditorialCollection
-                  ? getDisplayName(categorySlug, index)
-                  : undefined
-              }
               image={product.mainImage}
               price={product.price}
-              hidePrice={isEditorialCollection}
-              hideAddToCart={isEditorialCollection}
+              hidePrice={false}
+              hideAddToCart={false}
               hideFavorite={isEditorialCollection}
               serifName={isEditorialCollection}
               editorialCard={isEditorialCollection}
@@ -221,9 +152,7 @@ export default async function CategoryPage({ params }: Props) {
                 alt="Purpose"
                 className={styles.principleIcon}
               />
-
               <h3>Purpose</h3>
-
               <p>
                 No decoration, word, photo,
                 <br />
@@ -239,9 +168,7 @@ export default async function CategoryPage({ params }: Props) {
                 alt="Reference"
                 className={styles.principleIcon}
               />
-
               <h3>Reference</h3>
-
               <p>
                 The reference can come from architecture, history,
                 <br />
@@ -257,9 +184,7 @@ export default async function CategoryPage({ params }: Props) {
                 alt="Structure"
                 className={styles.principleIcon}
               />
-
               <h3>Structure</h3>
-
               <p>
                 Valinor does not add meaning on top of a product.
                 <br />
@@ -275,9 +200,7 @@ export default async function CategoryPage({ params }: Props) {
                 alt="Object"
                 className={styles.principleIcon}
               />
-
               <h3>Object</h3>
-
               <p>
                 It creates designed objects meant to be kept,
                 <br />
@@ -299,7 +222,9 @@ export default async function CategoryPage({ params }: Props) {
           </div>
 
           <div className={styles.principlesFooterText}>
-            <span>A DESIGN-LED STUDIO CREATING LEATHER OBJECTS</span>
+            <span>
+              A DESIGN-LED STUDIO CREATING LEATHER OBJECTS
+            </span>
           </div>
         </div>
       </section>

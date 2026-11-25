@@ -13,11 +13,9 @@
   max-width: 1440px;
   margin: 0 auto;
   padding: 0 70px;
-
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-
   position: relative;
 }
 
@@ -25,7 +23,6 @@
   justify-self: start;
   text-decoration: none;
   color: #1f1f1f;
-
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -41,31 +38,22 @@
 
 .logoSub {
   margin-top: 6px;
-
   font-size: 7px;
   font-weight: 500;
   line-height: 1;
   letter-spacing: 1.45px;
-
   color: #2f2f2f;
   white-space: nowrap;
 }
 
 .desktopNav {
   justify-self: center;
-
   display: flex;
   align-items: center;
   gap: 48px;
-
   font-size: 14px;
   font-weight: 400;
   color: #4f4b47;
-}
-
-.navItemWrapper {
-  position: relative;
-  padding: 31px 0;
 }
 
 .navItem {
@@ -75,72 +63,16 @@
   transition: color 0.25s ease;
 }
 
-.navItem:hover {
-  color: #202020;
-}
-
-.dropdown {
-  position: absolute;
-  top: 78px;
-  right: 50%;
-  transform: translateX(50%) translateY(8px);
-
-  width: 178px;
-  background: #ffffff;
-  border: 1px solid #e8e4df;
-  border-radius: 18px;
-  padding: 8px;
-  box-shadow: 0 18px 45px rgba(32, 32, 32, 0.07);
-  z-index: 6000;
-
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-
-  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
-}
-
-.navItemWrapper:hover .dropdown {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateX(50%) translateY(0);
-}
-
-.dropdown::before {
-  content: "";
-  position: absolute;
-  top: -24px;
-  right: 0;
-  width: 100%;
-  height: 24px;
-}
-
-.dropdownItem {
-  display: block;
-  padding: 10px 12px;
-
-  text-decoration: none;
-  color: #4f4b47;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 13px;
-
-  transition: background 0.25s ease, color 0.25s ease;
-}
-
-.dropdownItem:hover {
-  background: #fbf8f3;
+.navItem:hover,
+.navItem:focus-visible {
   color: #202020;
 }
 
 .cart {
   justify-self: end;
-
   display: flex;
   align-items: center;
   gap: 10px;
-
   text-decoration: none;
   color: #1f1f1f;
 }
@@ -157,20 +89,13 @@
   min-width: 8px;
 }
 
-.mobileToggle {
-  display: none;
-}
-
-.mobileMenuButton {
-  display: none;
-}
-
+.mobileToggle,
+.mobileMenuButton,
 .mobilePanel {
   display: none;
 }
 
-/* ---------- Mobile / Tablet Header ---------- */
-
+/* Mobile / Tablet Header */
 @media (max-width: 900px) {
   .header {
     height: 74px;
@@ -208,7 +133,6 @@
     left: 22px;
     top: 50%;
     transform: translateY(-50%);
-
     justify-self: auto;
     gap: 7px;
   }
@@ -223,6 +147,7 @@
   }
 
   .mobileToggle {
+    display: block;
     position: absolute;
     opacity: 0;
     pointer-events: none;
@@ -233,20 +158,16 @@
     right: 22px;
     top: 50%;
     transform: translateY(-50%);
-
     width: 38px;
     height: 38px;
-
     border: none;
     background: transparent;
     padding: 0;
-
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 7px;
-
     cursor: pointer;
     z-index: 6001;
   }
@@ -270,30 +191,21 @@
   .mobilePanel {
     display: flex;
     flex-direction: column;
-
     position: fixed;
     top: 74px;
     left: 0;
     right: 0;
-
     width: 100%;
     background: #ffffff;
     border-bottom: 1px solid #e8e4df;
-
     padding: 16px 22px 22px;
     box-sizing: border-box;
-
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transform: translateY(-8px);
-
     z-index: 5999;
-
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease,
-      visibility 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
   }
 
   .mobileToggle:checked ~ .mobilePanel {
@@ -306,35 +218,16 @@
   .mobileNavItem {
     display: block;
     width: 100%;
-
     padding: 15px 0;
-
     text-decoration: none;
     text-align: right;
     font-size: 14px;
     color: #4f4b47;
-
     border-bottom: 1px solid #f0ece7;
-  }
-
-  .mobileSubNav {
-    padding: 0 14px 12px 0;
-    border-bottom: 1px solid #f0ece7;
-  }
-
-  .mobileSubItem {
-    display: block;
-
-    padding: 8px 0;
-
-    text-decoration: none;
-    text-align: right;
-    font-size: 12px;
-    color: #77716b;
   }
 
   .mobileNavItem:hover,
-  .mobileSubItem:hover {
+  .mobileNavItem:focus-visible {
     color: #202020;
   }
 }

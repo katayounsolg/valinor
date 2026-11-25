@@ -286,7 +286,7 @@ export default async function AdminPage() {
 
                       <td>
                         <span className={styles.customerName}>
-                          {order.user.name || order.user.phone}
+                          {order.user?.name || order.user?.phone || order.recipientName}
                         </span>
                       </td>
 

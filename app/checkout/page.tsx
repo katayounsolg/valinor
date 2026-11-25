@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import Header from "@/app/components/Header";
@@ -127,8 +126,6 @@ function createRequestKey() {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-
   const { items, loaded } = useCart();
 
   const requestKeyRef = useRef<string | null>(null);
@@ -226,7 +223,10 @@ export default function CheckoutPage() {
           response.status === 401 ||
           data.code === "UNAUTHORIZED"
         ) {
-          router.replace("/login");
+          setCheckout(null);
+          setPageError(
+            "سرور هنوز برای بررسی سبد خرید نیاز به ورود دارد. مسیر API باید برای خرید مهمان اصلاح شود."
+          );
           return;
         }
 
@@ -243,20 +243,19 @@ export default function CheckoutPage() {
 
         setCheckout(data.checkout);
 
-        const customer =
-          data.customer as CustomerData;
+        const customer = (data.customer ?? null) as CustomerData | null;
 
         setFormData((current) => ({
           ...current,
 
           recipientName:
             current.recipientName ||
-            customer.name ||
+            customer?.name ||
             "",
 
           recipientPhone:
             current.recipientPhone ||
-            customer.phone ||
+            customer?.phone ||
             "",
         }));
       } catch (error) {
@@ -284,7 +283,7 @@ export default function CheckoutPage() {
     return () => {
       cancelled = true;
     };
-  }, [items, loaded, router]);
+  }, [items, loaded]);
 
   function updateField(
     field: keyof FormData,
@@ -470,7 +469,9 @@ export default function CheckoutPage() {
         response.status === 401 ||
         data.code === "UNAUTHORIZED"
       ) {
-        router.replace("/login");
+        setFormError(
+          "سرور هنوز برای ثبت سفارش نیاز به ورود دارد. API ثبت سفارش باید برای خرید مهمان اصلاح شود."
+        );
         return;
       }
 
@@ -575,7 +576,7 @@ export default function CheckoutPage() {
             <p
               className={styles.stateText}
             >
-              شماره سفارش شما:
+              کد پیگیری سفارش شما:
               <br />
               <strong dir="ltr">
                 {createdOrder.orderNumber}
@@ -595,16 +596,18 @@ export default function CheckoutPage() {
             <p
               className={styles.stateText}
             >
-              این سفارش هنوز پرداخت نشده است.
-              درگاه پرداخت در مرحله بعد به
-              همین سفارش متصل خواهد شد.
+              برای هماهنگی و نهایی‌کردن سفارش، کد پیگیری بالا را
+              در دایرکت صفحه رسمی اینستاگرام والینور برای ما ارسال کنید.
+              تیم والینور با این کد، سفارش شما را در داشبورد پیدا می‌کند
+              و مراحل بعدی را از طریق اینستاگرام با شما هماهنگ خواهد کرد.
+              ثبت این سفارش به معنی پرداخت آن نیست.
             </p>
 
             <Link
-              href="/profile"
+              href="/products"
               className={styles.stateLink}
             >
-              بازگشت به حساب کاربری
+              بازگشت به محصولات
             </Link>
           </section>
         </div>
@@ -843,8 +846,8 @@ export default function CheckoutPage() {
                 <h2>آدرس ارسال</h2>
 
                 <p>
-                  این آدرس در حساب کاربری
-                  ذخیره نمی‌شود.
+                  این آدرس فقط برای ارسال همین
+                  سفارش دریافت می‌شود.
                 </p>
               </header>
 
@@ -1178,7 +1181,7 @@ export default function CheckoutPage() {
               >
                 {submitting
                   ? "در حال ثبت سفارش..."
-                  : "ادامه به پرداخت"}
+                  : "ثبت سفارش و دریافت کد پیگیری"}
               </button>
 
               <p

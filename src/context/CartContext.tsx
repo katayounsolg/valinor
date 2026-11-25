@@ -1,7 +1,13 @@
+
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 type CartItem = {
   slug: string;
@@ -21,56 +27,95 @@ type CartContextType = {
   total: number;
 };
 
+const CART_STORAGE_KEY = "valinor_cart_guest";
+
 const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+function readSavedCart(): CartItem[] {
+  try {
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
 
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [storageKey, setStorageKey] = useState("valinor_cart_guest");
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    async function loadUserCart() {
-      setLoaded(false);
-
-      try {
-        const res = await fetch("/api/auth/me", {
-          cache: "no-store",
-        });
-
-        const data = await res.json();
-
-        const key = data.user?.phone
-          ? `valinor_cart_${data.user.phone}`
-          : "valinor_cart_guest";
-
-        setStorageKey(key);
-
-        const savedCart = localStorage.getItem(key);
-
-        setItems(savedCart ? JSON.parse(savedCart) : []);
-      } catch {
-        setStorageKey("valinor_cart_guest");
-
-        const savedCart = localStorage.getItem("valinor_cart_guest");
-
-        setItems(savedCart ? JSON.parse(savedCart) : []);
-      } finally {
-        setLoaded(true);
-      }
+    if (!savedCart) {
+      return [];
     }
 
-    loadUserCart();
-  }, [pathname]);
+    const parsed: unknown = JSON.parse(savedCart);
 
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item): item is CartItem => {
+      if (
+        typeof item !== "object" ||
+        item === null
+      ) {
+        return false;
+      }
+
+      const cartItem = item as Partial<CartItem>;
+
+      return (
+        typeof cartItem.slug === "string" &&
+        cartItem.slug.length > 0 &&
+        typeof cartItem.name === "string" &&
+        typeof cartItem.image === "string" &&
+        typeof cartItem.price === "number" &&
+        Number.isSafeInteger(cartItem.price) &&
+        cartItem.price >= 0 &&
+        typeof cartItem.quantity === "number" &&
+        Number.isInteger(cartItem.quantity) &&
+        cartItem.quantity > 0 &&
+        cartItem.quantity <= 100
+      );
+    });
+  } catch (error) {
+    console.error("Failed to load cart:", error);
+    return [];
+  }
+}
+
+export function CartProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  // Load the guest cart only once.
   useEffect(() => {
-    if (!loaded) return;
+    setItems(readSavedCart());
+    setLoaded(true);
+  }, []);
 
-    localStorage.setItem(storageKey, JSON.stringify(items));
-  }, [items, storageKey, loaded]);
+  // Save changes to the guest cart.
+  useEffect(() => {
+    if (!loaded) {
+      return;
+    }
 
-  const addToCart = (item: Omit<CartItem, "quantity">) => {
+    try {
+      localStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify(items)
+      );
+    } catch (error) {
+      console.error("Failed to save cart:", error);
+    }
+  }, [items, loaded]);
+
+  function addToCart(
+    item: Omit<CartItem, "quantity">
+  ) {
+    if (
+      !item.slug ||
+      !Number.isSafeInteger(item.price) ||
+      item.price < 0
+    ) {
+      return;
+    }
+
     setItems((currentItems) => {
       const existingItem = currentItems.find(
         (cartItem) => cartItem.slug === item.slug
@@ -81,7 +126,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           cartItem.slug === item.slug
             ? {
                 ...cartItem,
-                quantity: cartItem.quantity + 1,
+                quantity: Math.min(
+                  cartItem.quantity + 1,
+                  100
+                ),
               }
             : cartItem
         );
@@ -90,47 +138,59 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [
         ...currentItems,
         {
-          ...item,
+          slug: item.slug,
+          name: item.name,
+          image: item.image,
+          price: item.price,
           quantity: 1,
         },
       ];
     });
-  };
+  }
 
-  const increase = (slug: string) => {
+  function increase(slug: string) {
     setItems((currentItems) =>
       currentItems.map((item) =>
         item.slug === slug
           ? {
               ...item,
-              quantity: item.quantity + 1,
+              quantity: Math.min(
+                item.quantity + 1,
+                100
+              ),
             }
           : item
       )
     );
-  };
+  }
 
-  const decrease = (slug: string) => {
+  function decrease(slug: string) {
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.slug === slug && item.quantity > 1
+        item.slug === slug
           ? {
               ...item,
-              quantity: item.quantity - 1,
+              quantity: Math.max(
+                item.quantity - 1,
+                1
+              ),
             }
           : item
       )
     );
-  };
+  }
 
-  const remove = (slug: string) => {
+  function remove(slug: string) {
     setItems((currentItems) =>
-      currentItems.filter((item) => item.slug !== slug)
+      currentItems.filter(
+        (item) => item.slug !== slug
+      )
     );
-  };
+  }
 
   const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum + item.price * item.quantity,
     0
   );
 
@@ -155,7 +215,9 @@ export function useCart() {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error("useCart must be used inside CartProvider");
+    throw new Error(
+      "useCart must be used inside CartProvider"
+    );
   }
 
   return context;

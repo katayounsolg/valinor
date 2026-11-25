@@ -1,138 +1,171 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 
-type TabKey = "notebooks" | "planner";
-
-type Collection = {
-  name: string;
-  lines: string[];
+type Category = {
+  slug: string;
+  title: string;
   image: string;
-  href: string;
 };
 
-const notebookCollections: Collection[] = [
-  {
-    name: "Palette",
-    lines: ["Soft tones.", "Quiet inspiration."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/sabet",
-  },
-  {
-    name: "Origin",
-    lines: ["Timeless leather.", "Enduring character."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/tikeh",
-  },
-  {
-    name: "Kumi",
-    lines: ["Interlaced by hand.", "Strength in structure."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/kumi",
-  },
-  {
-    name: "Mosaic",
-    lines: [
-      "Pieces become something new. Fragments are gathered",
-      "into a calm composition. Each part keeps its own character,",
-      "while the whole object becomes balanced and complete.",
-    ],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/baft",
-  },
-  {
-    name: "Revealed",
-    lines: ["Precision in every cut", "and edge."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/boresh",
-  },
-  {
-    name: "Journal & Junior",
-    lines: ["Hand binding.", "Always together."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/mini",
-  },
-  {
-    name: "Mono",
-    lines: ["One piece.", "Timeless simplicity."],
-    image: "/images/hero/hero-banner.png",
-    href: "/products/moteharek",
-  },
-];
+type ObjectGroup = {
+  id: number | string;
+  slug: string;
+  title: string;
+  categories: Category[];
+};
+
+type GroupsResponse = {
+  success: boolean;
+  groups?: ObjectGroup[];
+  message?: string;
+};
+
+const collectionDescriptions: Record<string, string[]> = {
+  sabet: ["Soft tones.", "Quiet inspiration."],
+  tikeh: ["Timeless leather.", "Enduring character."],
+  kumi: ["Interlaced by hand.", "Strength in structure."],
+  boresh: ["Precision in every cut", "and edge."],
+  mini: ["Hand binding.", "Always together."],
+  moteharek: ["One piece.", "Timeless simplicity."],
+};
+
+const collectionNames: Record<string, string> = {
+  sabet: "Palette",
+  tikeh: "Origin",
+  kumi: "Kumi",
+  boresh: "Revealed",
+  mini: "Journal & Junior",
+  moteharek: "Mono",
+};
 
 export default function ProductsCollections() {
-  const [activeTab, setActiveTab] = useState<TabKey>("notebooks");
+  const [groups, setGroups] = useState<ObjectGroup[]>([]);
+  const [activeGroupSlug, setActiveGroupSlug] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadGroups() {
+      try {
+        const response = await fetch("/api/public/object-groups", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const data = (await response.json()) as GroupsResponse;
+
+        if (!response.ok || !data.success || !Array.isArray(data.groups)) {
+          throw new Error(data.message || "دریافت گروه‌های محصولات انجام نشد.");
+        }
+
+        if (controller.signal.aborted) return;
+
+        setGroups(data.groups);
+        setActiveGroupSlug((previous) => {
+          if (previous && data.groups!.some((group) => group.slug === previous)) {
+            return previous;
+          }
+          return data.groups![0]?.slug ?? null;
+        });
+        setError("");
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "خطا در دریافت گروه‌های محصولات.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void loadGroups();
+    return () => controller.abort();
+  }, []);
+
+  const activeGroup = groups.find((group) => group.slug === activeGroupSlug) ?? groups[0];
 
   return (
     <section className={styles.collectionArea}>
       <div className={styles.tabsGuide}>
-        <div className={styles.partialLine}></div>
-
-        <div className={styles.tabsRow}>
-          <button
-            type="button"
-            className={`${styles.tabButton} ${
-              activeTab === "notebooks" ? styles.activeTab : ""
-            }`}
-            onClick={() => setActiveTab("notebooks")}
-          >
-            Notebooks
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.tabButton} ${
-              activeTab === "planner" ? styles.activeTab : ""
-            }`}
-            onClick={() => setActiveTab("planner")}
-          >
-            To do | Planner
-          </button>
+        <div className={styles.partialLine} />
+        <div className={styles.tabsRow} role="tablist" aria-label="گروه‌های محصولات">
+          {groups.map((group) => (
+            <button
+              key={group.id}
+              type="button"
+              role="tab"
+              aria-selected={activeGroup?.slug === group.slug}
+              className={`${styles.tabButton} ${activeGroup?.slug === group.slug ? styles.activeTab : ""}`}
+              onClick={() => setActiveGroupSlug(group.slug)}
+            >
+              {group.title}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className={styles.fullLine}></div>
+      <div className={styles.fullLine} />
 
-      {activeTab === "notebooks" ? (
-        <div className={styles.collectionsBlock}>
-          <h2>Collections</h2>
-
-          <div className={styles.collectionGrid}>
-            {notebookCollections.map((collection) => (
-              <Link
-                key={collection.name}
-                href={collection.href}
-                className={styles.collectionCard}
-              >
-                <div className={styles.collectionImageBox}>
-                  <img
-                    src={collection.image}
-                    alt={collection.name}
-                    className={styles.collectionImage}
-                  />
-                </div>
-
-                <div className={styles.collectionInfo}>
-                  <h3>{collection.name}</h3>
-
-                  <p>
-                    {collection.lines.map((line) => (
-                      <span key={line}>
-                        {line}
-                        <br />
-                      </span>
-                    ))}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+      {loading ? (
+        <div className={styles.emptyState}>در حال بارگذاری مجموعه‌ها...</div>
+      ) : error ? (
+        <div className={styles.emptyState} role="alert">{error}</div>
+      ) : !activeGroup ? (
+        <div className={styles.emptyState}>هنوز گروهی برای نمایش ثبت نشده است.</div>
       ) : (
-        <div className={styles.emptyState}>
-          To do and planner collections will be added here.
+        <div className={styles.collectionsBlock} role="tabpanel">
+          <h2 className={styles.seriesHeading} dir="ltr">
+            <span className={styles.soolTitle}>
+              {activeGroup.slug === "notebooks" ? "SOOL" : activeGroup.title}
+            </span>
+            <span className={styles.seriesSubtitle}>Series</span>
+          </h2>
+
+          {activeGroup.categories.length === 0 ? (
+            <div className={styles.emptyState}>
+              هنوز دسته‌بندی‌ای به این گروه اختصاص داده نشده است.
+            </div>
+          ) : (
+            <div className={styles.collectionGrid}>
+              {activeGroup.categories.map((category) => {
+                const name = collectionNames[category.slug] || category.title;
+                const lines = collectionDescriptions[category.slug] || [];
+
+                return (
+                  <Link
+                    key={category.slug}
+                    href={`/products/${encodeURIComponent(category.slug)}`}
+                    className={styles.collectionCard}
+                  >
+                    <div className={styles.collectionImageBox}>
+                      <img
+                        src={category.image}
+                        alt={name}
+                        className={styles.collectionImage}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className={styles.collectionInfo}>
+                      <h3>{name}</h3>
+                      {lines.length > 0 && (
+                        <p>
+                          {lines.map((line, index) => (
+                            <span key={index}>
+                              {line}
+                              {index < lines.length - 1 && <br />}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </section>

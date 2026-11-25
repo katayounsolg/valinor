@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -180,9 +181,29 @@ export default function ImageUploaderClient({
             return;
           }
 
+          /*
+            نمایش پاسخ واقعی ParsPack
+            برای تشخیص علت خطاهای آپلود.
+            آدرس امضاشده و اطلاعات
+            محرمانه ثبت نمی‌شوند.
+          */
+          const responseText =
+            xhr.responseText || "";
+
+          console.error(
+            "ParsPack upload error:",
+            {
+              status: xhr.status,
+              response: responseText,
+            }
+          );
+
           reject(
             new Error(
-              `آپلود تصویر انجام نشد. کد پاسخ: ${xhr.status}`
+              `آپلود تصویر انجام نشد. کد پاسخ: ${xhr.status}` +
+                (responseText
+                  ? ` — ${responseText.slice(0, 500)}`
+                  : "")
             )
           );
         };
@@ -383,7 +404,6 @@ export default function ImageUploaderClient({
               }
             >
               JPG، PNG، WEBP یا AVIF
-              <br />
               حداکثر ۸ مگابایت
             </span>
           </span>

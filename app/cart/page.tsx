@@ -1,9 +1,16 @@
+
 "use client";
 
 import Link from "next/link";
 import Header from "@/app/components/Header";
 import { useCart } from "@/src/context/CartContext";
 import styles from "./page.module.css";
+
+const SHIPPING_PRICE = 150_000;
+
+function formatPrice(value: number): string {
+  return new Intl.NumberFormat("fa-IR").format(value);
+}
 
 export default function CartPage() {
   const {
@@ -26,7 +33,7 @@ export default function CartPage() {
 
             <h1>سبد خرید</h1>
 
-            <p>محصولات انتخاب شده برای سفارش</p>
+            <p>محصولات انتخاب‌شده برای سفارش</p>
           </section>
 
           {!loaded ? (
@@ -65,19 +72,21 @@ export default function CartPage() {
                           onClick={() =>
                             decrease(item.slug)
                           }
-                          aria-label="کم کردن تعداد"
+                          aria-label={`کم کردن تعداد ${item.name}`}
                         >
                           −
                         </button>
 
-                        <span>{item.quantity}</span>
+                        <span>
+                          {formatPrice(item.quantity)}
+                        </span>
 
                         <button
                           type="button"
                           onClick={() =>
                             increase(item.slug)
                           }
-                          aria-label="زیاد کردن تعداد"
+                          aria-label={`افزایش تعداد ${item.name}`}
                         >
                           +
                         </button>
@@ -87,21 +96,17 @@ export default function CartPage() {
                           onClick={() =>
                             remove(item.slug)
                           }
-                          className={
-                            styles.removeButton
-                          }
+                          className={styles.removeButton}
                         >
                           حذف
                         </button>
                       </div>
                     </div>
 
-                    <strong
-                      className={styles.itemPrice}
-                    >
-                      {(
+                    <strong className={styles.itemPrice}>
+                      {formatPrice(
                         item.price * item.quantity
-                      ).toLocaleString("fa-IR")}{" "}
+                      )}{" "}
                       تومان
                     </strong>
                   </article>
@@ -109,57 +114,82 @@ export default function CartPage() {
               </div>
 
               <aside className={styles.summary}>
-                <p
-                  className={
-                    styles.summaryEyebrow
-                  }
-                >
-                  SUMMARY
+                <p className={styles.summaryEyebrow}>
+                  ORDER SUMMARY
                 </p>
 
                 <h2>خلاصه سفارش</h2>
 
-                <div
-                  className={styles.summaryRow}
-                >
+                <div className={styles.summaryRow}>
                   <span>جمع محصولات</span>
 
                   <span>
-                    {total.toLocaleString("fa-IR")}{" "}
+                    {formatPrice(total)} تومان
+                  </span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span>هزینه ارسال</span>
+
+                  <span>
+                    {formatPrice(SHIPPING_PRICE)}{" "}
                     تومان
                   </span>
                 </div>
 
-                <div
-                  className={styles.summaryRow}
-                >
-                  <span>ارسال</span>
-
-                  <span>
-                    ۱۵۰٬۰۰۰ تومان
-                  </span>
-                </div>
-
-                <div
-                  className={styles.totalRow}
-                >
-                  <strong>
-                    مبلغ قابل پرداخت
-                  </strong>
+                <div className={styles.totalRow}>
+                  <strong>مبلغ کل سفارش</strong>
 
                   <strong>
-                    {(total + 150_000).toLocaleString(
-                      "fa-IR"
+                    {formatPrice(
+                      total + SHIPPING_PRICE
                     )}{" "}
                     تومان
                   </strong>
                 </div>
 
+                <p
+                  style={{
+                    marginTop: "20px",
+                    marginBottom: "16px",
+                    fontSize: "13px",
+                    lineHeight: "2",
+                    color: "#786f69",
+                    textAlign: "right",
+                  }}
+                >
+                  در مرحله بعد اطلاعات ارسال را وارد
+                  می‌کنید و پس از ثبت سفارش، یک کد
+                  پیگیری دریافت خواهید کرد.
+                  برای هماهنگی سفارش، کد را در دایرکت
+                  اینستاگرام والینور ارسال کنید.
+                </p>
+
                 <Link
                   href="/checkout"
                   className={styles.checkoutButton}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    minHeight: "56px",
+                    padding: "14px 18px",
+                    backgroundColor: "#303030",
+                    color: "#ffffff",
+                    border: "1px solid #303030",
+                    borderRadius: "0",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    lineHeight: "1.7",
+                    textDecoration: "none",
+                    textAlign: "center",
+                    cursor: "pointer",
+                    boxSizing: "border-box",
+                    transition: "background-color 0.2s ease",
+                  }}
                 >
-                  ادامه فرایند خرید
+                  ادامه و دریافت کد سفارش
                 </Link>
 
                 <Link

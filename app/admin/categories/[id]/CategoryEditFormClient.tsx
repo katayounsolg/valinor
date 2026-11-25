@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  FormEvent,
+  type FormEvent,
+  useEffect,
   useState,
 } from "react";
 
@@ -16,6 +17,20 @@ type Category = {
   slug: string;
   image: string;
   productCount: number;
+  objectGroupId?: number | null;
+};
+
+type ObjectGroup = {
+  id: number;
+  title: string;
+  slug: string;
+  isActive: boolean;
+};
+
+type GroupsResponse = {
+  success?: boolean;
+  groups?: ObjectGroup[];
+  message?: string;
 };
 
 type Props = {
@@ -35,6 +50,45 @@ export default function CategoryEditFormClient({
 
   const [image, setImage] =
     useState(category.image);
+
+  const [groups, setGroups] = useState<ObjectGroup[]>([]);
+  const [groupId, setGroupId] = useState(
+    category.objectGroupId != null ? String(category.objectGroupId) : ""
+  );
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [groupsError, setGroupsError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadGroups() {
+      try {
+        const response = await fetch("/api/admin/object-groups", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const result = (await response.json().catch(() => null)) as GroupsResponse | null;
+
+        if (response.status === 401) {
+          router.replace("/admin-login");
+          return;
+        }
+        if (!response.ok || !result?.success || !Array.isArray(result.groups)) {
+          throw new Error(result?.message || "دریافت گروه‌های محصولات انجام نشد.");
+        }
+        setGroups(result.groups);
+        setGroupsError("");
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setGroupsError(err instanceof Error ? err.message : "دریافت گروه‌های محصولات انجام نشد.");
+      } finally {
+        if (!controller.signal.aborted) setGroupsLoading(false);
+      }
+    }
+
+    void loadGroups();
+    return () => controller.abort();
+  }, [router]);
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -65,6 +119,7 @@ export default function CategoryEditFormClient({
     const cleanTitle = title.trim();
     const cleanSlug = slug.trim();
     const cleanImage = image.trim();
+    const selectedGroupId = Number(groupId);
 
     if (
       cleanTitle.length < 2 ||
@@ -96,6 +151,17 @@ export default function CategoryEditFormClient({
       return;
     }
 
+    if (
+      groupsLoading ||
+      groupsError ||
+      !Number.isSafeInteger(selectedGroupId) ||
+      selectedGroupId < 1 ||
+      !groups.some((group) => group.id === selectedGroupId)
+    ) {
+      setError("ابتدا گروه اصلی دسته‌بندی را انتخاب کنید.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError("");
@@ -115,6 +181,7 @@ export default function CategoryEditFormClient({
             title: cleanTitle,
             slug: cleanSlug,
             image: cleanImage,
+            objectGroupId: selectedGroupId,
           }),
         }
       );
@@ -131,7 +198,7 @@ export default function CategoryEditFormClient({
       }
 
       if (response.status === 401) {
-        router.replace("/login");
+        router.replace("/admin-login");
         return;
       }
 
@@ -157,6 +224,11 @@ export default function CategoryEditFormClient({
       setImage(
         data.category.image
       );
+
+      if (data.category?.objectGroupId !== selectedGroupId) {
+        setError("پاسخ سرور تأیید نکرد که گروه دسته‌بندی ذخیره شده است. API ویرایش دسته‌بندی باید به‌روزرسانی شود.");
+        return;
+      }
 
       setSuccess(
         "تغییرات دسته‌بندی با موفقیت ذخیره شد."
@@ -206,7 +278,7 @@ export default function CategoryEditFormClient({
       }
 
       if (response.status === 401) {
-        router.replace("/login");
+        router.replace("/admin-login");
         return;
       }
 
@@ -345,6 +417,44 @@ export default function CategoryEditFormClient({
                   عدد و خط تیره.
                 </p>
               </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  گروه اصلی در صفحه Objects
+                </span>
+                <select
+                  className={styles.input}
+                  value={groupId}
+                  disabled={busy || groupsLoading || Boolean(groupsError)}
+                  required
+                  onChange={(event) => {
+                    setGroupId(event.target.value);
+                    setError("");
+                    setSuccess("");
+                  }}
+                >
+                  <option value="">
+                    {groupsLoading ? "در حال دریافت گروه‌ها..." : "انتخاب گروه"}
+                  </option>
+                  {groups.map((group) => (
+                    <option
+                      key={group.id}
+                      value={group.id}
+                      disabled={!group.isActive && groupId !== String(group.id)}
+                    >
+                      {group.title}{!group.isActive ? " (غیرفعال)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.help}>
+                  دسته‌بندی در تب انتخاب‌شده در صفحه Objects قرار می‌گیرد.
+                </p>
+                {groupsError && (
+                  <p className={styles.message} role="alert">
+                    {groupsError}
+                  </p>
+                )}
+              </label>
             </div>
           </div>
 
@@ -365,7 +475,7 @@ export default function CategoryEditFormClient({
               className={
                 styles.saveButton
               }
-              disabled={busy}
+              disabled={busy || groupsLoading || Boolean(groupsError) || !groupId}
             >
               {submitting
                 ? "در حال ذخیره..."

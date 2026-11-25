@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { getCurrentUser } from "@/app/lib/auth";
 
 const SHIPPING_PRICE = 150_000;
 
@@ -11,19 +10,7 @@ type RawCartItem = {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "UNAUTHORIZED",
-          message: "برای ادامه خرید باید وارد حساب کاربری شوید.",
-        },
-        { status: 401 }
-      );
-    }
-
+    // Guest checkout: no account or session is required to validate a cart.
     const body = await request.json().catch(() => null);
 
     if (!body || !Array.isArray(body.items)) {
@@ -64,11 +51,7 @@ export async function POST(request: Request) {
     const normalizedItems = new Map<string, number>();
 
     for (const item of rawItems) {
-      const slug =
-        typeof item.slug === "string"
-          ? item.slug.trim()
-          : "";
-
+      const slug = typeof item.slug === "string" ? item.slug.trim() : "";
       const quantity = Number(item.quantity);
 
       if (
@@ -87,11 +70,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const previousQuantity =
-        normalizedItems.get(slug) || 0;
-
-      const nextQuantity =
-        previousQuantity + quantity;
+      const nextQuantity = (normalizedItems.get(slug) || 0) + quantity;
 
       if (nextQuantity > 100) {
         return NextResponse.json(
@@ -107,24 +86,14 @@ export async function POST(request: Request) {
       normalizedItems.set(slug, nextQuantity);
     }
 
-    const requestedItems = Array.from(
-      normalizedItems.entries()
-    ).map(([slug, quantity]) => ({
-      slug,
-      quantity,
-    }));
-
-    const slugs = requestedItems.map(
-      (item) => item.slug
+    const requestedItems = Array.from(normalizedItems.entries()).map(
+      ([slug, quantity]) => ({ slug, quantity })
     );
 
     const products = await prisma.product.findMany({
       where: {
-        slug: {
-          in: slugs,
-        },
+        slug: { in: requestedItems.map((item) => item.slug) },
       },
-
       select: {
         id: true,
         slug: true,
@@ -136,13 +105,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const productMap = new Map(
-      products.map((product) => [
-        product.slug,
-        product,
-      ])
-    );
-
+    const productMap = new Map(products.map((product) => [product.slug, product]));
     const missingProducts = requestedItems.filter(
       (item) => !productMap.has(item.slug)
     );
@@ -152,28 +115,19 @@ export async function POST(request: Request) {
         {
           success: false,
           code: "PRODUCT_NOT_FOUND",
-          message:
-            "یکی از محصولات سبد خرید دیگر در فروشگاه موجود نیست.",
-          products: missingProducts.map(
-            (item) => item.slug
-          ),
+          message: "یکی از محصولات سبد خرید دیگر در فروشگاه موجود نیست.",
+          products: missingProducts.map((item) => item.slug),
         },
         { status: 409 }
       );
     }
 
     const checkoutItems = [];
-
     let subtotalPrice = 0;
 
     for (const requestedItem of requestedItems) {
-      const product = productMap.get(
-        requestedItem.slug
-      );
-
-      if (!product) {
-        continue;
-      }
+      const product = productMap.get(requestedItem.slug);
+      if (!product) continue;
 
       if (!product.isAvailable) {
         return NextResponse.json(
@@ -194,19 +148,14 @@ export async function POST(request: Request) {
             code: "INSUFFICIENT_STOCK",
             message: `موجودی محصول «${product.name}» برای تعداد انتخاب‌شده کافی نیست.`,
             product: product.slug,
-            requestedQuantity:
-              requestedItem.quantity,
-            availableStock:
-              product.stock,
+            requestedQuantity: requestedItem.quantity,
+            availableStock: product.stock,
           },
           { status: 409 }
         );
       }
 
-      const lineTotal =
-        product.price *
-        requestedItem.quantity;
-
+      const lineTotal = product.price * requestedItem.quantity;
       subtotalPrice += lineTotal;
 
       checkoutItems.push({
@@ -214,33 +163,25 @@ export async function POST(request: Request) {
         slug: product.slug,
         name: product.name,
         image: product.mainImage,
-        quantity:
-          requestedItem.quantity,
-        unitPrice:
-          product.price,
+        quantity: requestedItem.quantity,
+        unitPrice: product.price,
         lineTotal,
-        availableStock:
-          product.stock,
+        availableStock: product.stock,
       });
     }
 
-    const totalPrice =
-      subtotalPrice +
-      SHIPPING_PRICE;
+    const totalPrice = subtotalPrice + SHIPPING_PRICE;
 
     if (
       !Number.isSafeInteger(subtotalPrice) ||
       !Number.isSafeInteger(totalPrice)
     ) {
-      throw new Error(
-        "Checkout total exceeded safe integer range."
-      );
+      throw new Error("Checkout total exceeded safe integer range.");
     }
 
     return NextResponse.json(
       {
         success: true,
-
         checkout: {
           items: checkoutItems,
           subtotalPrice,
@@ -249,31 +190,22 @@ export async function POST(request: Request) {
           totalPrice,
           moneyUnit: "TOMAN",
         },
-
-        customer: {
-          name: user.name,
-          phone: user.phone,
-        },
+        // The checkout form can collect the guest's name and phone.
+        customer: { name: null, phone: "" },
       },
       {
         status: 200,
-        headers: {
-          "Cache-Control": "no-store",
-        },
+        headers: { "Cache-Control": "no-store" },
       }
     );
   } catch (error) {
-    console.error(
-      "Checkout validation failed:",
-      error
-    );
+    console.error("Checkout validation failed:", error);
 
     return NextResponse.json(
       {
         success: false,
         code: "INTERNAL_ERROR",
-        message:
-          "خطایی در بررسی سبد خرید رخ داد. لطفاً دوباره تلاش کنید.",
+        message: "خطایی در بررسی سبد خرید رخ داد. لطفاً دوباره تلاش کنید.",
       },
       { status: 500 }
     );

@@ -1,11 +1,16 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import {
-  FormEvent,
-  useState,
-} from "react";
+  ImagePlus,
+  Images,
+  AlignLeft,
+  AlignRight,
+  Package,
+} from "lucide-react";
 
 import ImageUploaderClient from "@/app/admin/components/ImageUploaderClient";
 import styles from "../[id]/page.module.css";
@@ -27,6 +32,14 @@ type ProductFormState = {
   shortDescription: string;
   fullDescription: string;
 
+  leftDescription: string;
+  detailsContent: string;
+  shippingContent: string;
+
+  englishName: string;
+  seriesTitle: string;
+  seriesTagline: string;
+
   price: string;
   stock: string;
 
@@ -43,6 +56,8 @@ type ProductFormState = {
   isAvailable: boolean;
 };
 
+const MAX_IMAGES = 6;
+
 export default function ProductCreateFormClient({
   categories,
 }: Props) {
@@ -55,6 +70,14 @@ export default function ProductCreateFormClient({
 
       shortDescription: "",
       fullDescription: "",
+
+      leftDescription: "",
+      detailsContent: "",
+      shippingContent: "",
+
+      englishName: "",
+      seriesTitle: "",
+      seriesTagline: "",
 
       price: "",
       stock: "0",
@@ -79,12 +102,9 @@ export default function ProductCreateFormClient({
   const [submitting, setSubmitting] =
     useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
-  function updateField<
-    K extends keyof ProductFormState
-  >(
+  function updateField<K extends keyof ProductFormState>(
     field: K,
     value: ProductFormState[K]
   ) {
@@ -93,55 +113,52 @@ export default function ProductCreateFormClient({
       [field]: value,
     }));
 
-    if (error) {
-      setError("");
-    }
+    setError("");
   }
 
-  function addGalleryImage(
-    publicUrl: string
+  // تصویر شماره یک
+  function updateMainImage(url: string) {
+    updateField("mainImage", url);
+  }
+
+  // تصاویر شماره دو تا شش؛ جایگاه‌ها ثابت می‌مانند.
+  // اگر تصویری حذف شود، جایگاه‌های بعد از آن نیز خالی می‌شوند
+  // تا ترتیب تصاویر در گالری به‌هم نریزد.
+  function updateGalleryImage(
+    index: number,
+    url: string
   ) {
-    const cleanUrl = publicUrl.trim();
-
-    if (!cleanUrl) {
-      return;
-    }
-
     setFormData((current) => {
-      if (
-        current.images.includes(cleanUrl)
-      ) {
-        return current;
+      const next = Array.from(
+        { length: MAX_IMAGES - 1 },
+        (_, imageIndex) => current.images[imageIndex] || ""
+      );
+
+      next[index] = url;
+
+      if (!url) {
+        for (let nextIndex = index + 1; nextIndex < next.length; nextIndex += 1) {
+          next[nextIndex] = "";
+        }
       }
 
       return {
         ...current,
-        images: [
-          ...current.images,
-          cleanUrl,
-        ],
+        images: next,
       };
     });
 
-    if (error) {
-      setError("");
-    }
+    setError("");
   }
 
-  function removeGalleryImage(
-    imageIndex: number
-  ) {
-    setFormData((current) => ({
-      ...current,
-      images: current.images.filter(
-        (_image, index) =>
-          index !== imageIndex
-      ),
-    }));
+  function getImageAt(index: number) {
+    return formData.images[index] || "";
+  }
 
-    if (error) {
-      setError("");
-    }
+  function isImageSlotEnabled(index: number) {
+    if (index === 0) return true;
+
+    return Boolean(formData.images[index - 1]);
   }
 
   async function handleSubmit(
@@ -149,61 +166,36 @@ export default function ProductCreateFormClient({
   ) {
     event.preventDefault();
 
-    if (submitting) {
-      return;
-    }
+    if (submitting) return;
 
-    const name =
-      formData.name.trim();
+    const name = formData.name.trim();
+    const slug = formData.slug.trim();
 
-    const slug =
-      formData.slug.trim();
+    const price = Number(formData.price);
+    const stock = Number(formData.stock);
+    const categoryId = Number(formData.categoryId);
 
-    const price = Number(
-      formData.price
-    );
+    const mainImage = formData.mainImage.trim();
 
-    const stock = Number(
-      formData.stock
-    );
+    const images = formData.images
+      .slice(0, MAX_IMAGES - 1)
+      .map((item) => item.trim())
+      .filter(Boolean);
 
-    const categoryId = Number(
-      formData.categoryId
-    );
+    const tags = formData.tags
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
 
-    const mainImage =
-      formData.mainImage.trim();
-
-    const images =
-      formData.images
-        .map((item) => item.trim())
-        .filter(Boolean);
-
-    /*
-      تگ‌ها با کاما جدا می‌شوند.
-    */
-    const tags =
-      formData.tags
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean);
-
-    if (
-      name.length < 2 ||
-      name.length > 160
-    ) {
-      setError(
-        "نام محصول باید بین ۲ تا ۱۶۰ کاراکتر باشد."
-      );
+    if (name.length < 2 || name.length > 160) {
+      setError("نام محصول باید بین ۲ تا ۱۶۰ کاراکتر باشد.");
       return;
     }
 
     if (
       slug.length < 2 ||
       slug.length > 160 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-        slug
-      )
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
     ) {
       setError(
         "Slug معتبر نیست. فقط حروف انگلیسی کوچک، عدد و خط تیره مجاز است."
@@ -211,40 +203,28 @@ export default function ProductCreateFormClient({
       return;
     }
 
-    if (
-      !Number.isSafeInteger(price) ||
-      price < 0
-    ) {
-      setError(
-        "قیمت محصول معتبر نیست."
-      );
+    if (!Number.isSafeInteger(price) || price < 0) {
+      setError("قیمت محصول معتبر نیست.");
       return;
     }
 
-    if (
-      !Number.isSafeInteger(stock) ||
-      stock < 0
-    ) {
-      setError(
-        "موجودی محصول معتبر نیست."
-      );
+    if (!Number.isSafeInteger(stock) || stock < 0) {
+      setError("موجودی محصول معتبر نیست.");
       return;
     }
 
-    if (
-      !Number.isInteger(categoryId) ||
-      categoryId < 1
-    ) {
-      setError(
-        "یک دسته‌بندی معتبر انتخاب کنید."
-      );
+    if (!Number.isInteger(categoryId) || categoryId < 1) {
+      setError("یک دسته‌بندی معتبر انتخاب کنید.");
       return;
     }
 
     if (!mainImage) {
-      setError(
-        "ابتدا تصویر اصلی محصول را آپلود کنید."
-      );
+      setError("تصویر شماره ۱ (تصویر اصلی) را آپلود کنید.");
+      return;
+    }
+
+    if (images.length > 5) {
+      setError("حداکثر پنج تصویر تکمیلی مجاز است.");
       return;
     }
 
@@ -256,10 +236,8 @@ export default function ProductCreateFormClient({
         "/api/admin/products",
         {
           method: "POST",
-
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
 
           body: JSON.stringify({
@@ -272,6 +250,26 @@ export default function ProductCreateFormClient({
             fullDescription:
               formData.fullDescription.trim(),
 
+            // ستون چپ
+            leftDescription:
+              formData.leftDescription.trim(),
+
+            detailsContent:
+              formData.detailsContent.trim(),
+
+            shippingContent:
+              formData.shippingContent.trim(),
+
+            // ستون راست
+            englishName:
+              formData.englishName.trim(),
+
+            seriesTitle:
+              formData.seriesTitle.trim(),
+
+            seriesTagline:
+              formData.seriesTagline.trim(),
+
             price,
             stock,
 
@@ -280,19 +278,12 @@ export default function ProductCreateFormClient({
 
             tags,
 
-            material:
-              formData.material.trim(),
-
-            dimensions:
-              formData.dimensions.trim(),
-
-            weight:
-              formData.weight.trim(),
+            material: formData.material.trim(),
+            dimensions: formData.dimensions.trim(),
+            weight: formData.weight.trim(),
 
             categoryId,
-
-            isAvailable:
-              formData.isAvailable,
+            isAvailable: formData.isAvailable,
           }),
         }
       );
@@ -302,9 +293,7 @@ export default function ProductCreateFormClient({
         .catch(() => null);
 
       if (!data) {
-        setError(
-          "پاسخ نامعتبر از سرور دریافت شد."
-        );
+        setError("پاسخ نامعتبر از سرور دریافت شد.");
         return;
       }
 
@@ -313,30 +302,20 @@ export default function ProductCreateFormClient({
         return;
       }
 
-      if (
-        !response.ok ||
-        !data.success
-      ) {
+      if (!response.ok || !data.success) {
         setError(
-          data.message ||
-            "افزودن محصول انجام نشد."
+          data.message || "افزودن محصول انجام نشد."
         );
         return;
       }
 
-      /*
-        بعد از ساخت موفق،
-        مستقیم وارد صفحه ویرایش همان محصول می‌شویم.
-      */
-      router.push(
-        `/admin/products/${data.product.id}`
-      );
-
+      router.push(`/admin/products/${data.product.id}`);
       router.refresh();
-    } catch (error) {
+
+    } catch (submitError) {
       console.error(
         "Product creation failed:",
-        error
+        submitError
       );
 
       setError(
@@ -352,138 +331,76 @@ export default function ProductCreateFormClient({
       className={styles.layout}
       onSubmit={handleSubmit}
     >
-      {/* MAIN */}
       <div className={styles.main}>
-        {/* BASIC */}
-        <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              اطلاعات اصلی
-            </h2>
 
-            <p
-              className={styles.panelSub}
-            >
-              نام، آدرس محصول و دسته‌بندی
+        {/* اطلاعات اصلی */}
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              اطلاعات اصلی محصول
+            </h2>
+            <p className={styles.panelSub}>
+              نام، آدرس و دسته‌بندی محصول
             </p>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={styles.gridTwo}
-            >
-              <label
-                className={`${styles.field} ${styles.fieldFull}`}
-              >
-                <span
-                  className={styles.label}
-                >
-                  نام محصول
-                </span>
+          <div className={styles.panelBody}>
+            <div className={styles.gridTwo}>
 
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>نام محصول</span>
                 <input
                   className={styles.input}
-                  type="text"
                   value={formData.name}
                   maxLength={160}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "name",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("name", e.target.value)
                   }
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  Slug
-                </span>
-
+              <label className={styles.field}>
+                <span className={styles.label}>Slug</span>
                 <input
                   className={`${styles.input} ${styles.ltr}`}
-                  type="text"
                   value={formData.slug}
                   maxLength={160}
                   spellCheck={false}
-                  disabled={submitting}
                   placeholder="leather-wallet"
-                  onChange={(event) =>
-                    updateField(
-                      "slug",
-                      event.target.value
-                    )
+                  disabled={submitting}
+                  onChange={(e) =>
+                    updateField("slug", e.target.value)
                   }
                 />
-
                 <p className={styles.help}>
-                  فقط حروف انگلیسی کوچک،
-                  عدد و خط تیره.
+                  حروف انگلیسی کوچک، عدد و خط تیره.
                 </p>
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  دسته‌بندی
-                </span>
-
+              <label className={styles.field}>
+                <span className={styles.label}>دسته‌بندی</span>
                 <select
                   className={styles.select}
-                  value={
-                    formData.categoryId
-                  }
-                  disabled={
-                    submitting ||
-                    categories.length === 0
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "categoryId",
-                      event.target.value
-                    )
+                  value={formData.categoryId}
+                  disabled={submitting || categories.length === 0}
+                  onChange={(e) =>
+                    updateField("categoryId", e.target.value)
                   }
                 >
-                  {categories.length ===
-                  0 ? (
+                  {categories.length === 0 ? (
                     <option value="">
                       دسته‌بندی‌ای وجود ندارد
                     </option>
                   ) : (
-                    categories.map(
-                      (category) => (
-                        <option
-                          key={
-                            category.id
-                          }
-                          value={
-                            category.id
-                          }
-                        >
-                          {
-                            category.title
-                          }
-                        </option>
-                      )
-                    )
+                    categories.map((category) => (
+                      <option
+                        key={category.id}
+                        value={category.id}
+                      >
+                        {category.title}
+                      </option>
+                    ))
                   )}
                 </select>
               </label>
@@ -491,123 +408,326 @@ export default function ProductCreateFormClient({
           </div>
         </article>
 
-        {/* DESCRIPTION */}
+        {/* تصاویر */}
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              توضیحات محصول
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              <Images size={19} style={{ verticalAlign: "middle" }} />
+              {" "}گالری تصاویر محصول
             </h2>
 
-            <p
-              className={styles.panelSub}
-            >
-              متن کوتاه و توضیحات کامل
-              صفحه محصول
+            <p className={styles.panelSub}>
+              شش جایگاه مشخص برای تصاویر محصول
             </p>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
+          <div className={styles.panelBody}>
             <div
-              className={styles.gridTwo}
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(2, minmax(0, 1fr))",
+                gap: "18px",
+              }}
             >
-              <label
-                className={`${styles.field} ${styles.fieldFull}`}
-              >
-                <span
-                  className={styles.label}
-                >
-                  توضیح کوتاه
-                </span>
+              {Array.from(
+                { length: MAX_IMAGES },
+                (_, index) => {
+                  const isMain = index === 0;
+                  const imageValue = isMain
+                    ? formData.mainImage
+                    : getImageAt(index - 1);
 
+                  const enabled =
+                    isMain ||
+                    isImageSlotEnabled(index - 1);
+
+                  return (
+                    <div
+                      key={index}
+                      className={styles.field}
+                      style={{
+                        gridColumn: isMain
+                          ? "1 / -1"
+                          : undefined,
+                        padding: "16px",
+                        border: "1px solid #e8e4df",
+                        borderRadius: "10px",
+                        background: "#fffdf9",
+                        opacity: enabled ? 1 : 0.45,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "12px",
+                          gap: "8px",
+                        }}
+                      >
+                        <span className={styles.label}>
+                          تصویر شماره {index + 1}
+                        </span>
+
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            color: "#898078",
+                          }}
+                        >
+                          {isMain
+                            ? "تصویر اصلی"
+                            : "تصویر گالری"}
+                        </span>
+                      </div>
+
+                      <ImageUploaderClient
+                        value={imageValue}
+                        scope="products"
+                        disabled={
+                          submitting || !enabled
+                        }
+                        onChange={(url) => {
+                          if (isMain) {
+                            updateMainImage(url);
+                          } else {
+                            updateGalleryImage(
+                              index - 1,
+                              url
+                            );
+                          }
+                        }}
+                      />
+
+                      {!enabled && (
+                        <p className={styles.help}>
+                          ابتدا تصویر جایگاه قبلی را انتخاب کنید.
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
+
+            <p className={styles.help}>
+              تصویر اول عکس اصلی محصول است. پنج تصویر بعدی
+              به ترتیب در گالری نمایش داده می‌شوند.
+              برای حفظ ترتیب، تصاویر را از شماره ۱ به ۶
+              انتخاب کنید.
+            </p>
+          </div>
+        </article>
+
+        {/* متن سمت راست */}
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              <AlignRight
+                size={18}
+                style={{ verticalAlign: "middle" }}
+              />
+              {" "}محتوای سمت راست صفحه محصول
+            </h2>
+
+            <p className={styles.panelSub}>
+              عنوان‌ها و توضیحات کنار گالری
+            </p>
+          </header>
+
+          <div className={styles.panelBody}>
+            <div className={styles.gridTwo}>
+
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  نام انگلیسی محصول
+                </span>
+                <input
+                  className={styles.input}
+                  value={formData.englishName}
+                  maxLength={160}
+                  disabled={submitting}
+                  placeholder="Silver Ash"
+                  onChange={(e) =>
+                    updateField("englishName", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  عنوان مجموعه
+                </span>
+                <input
+                  className={styles.input}
+                  value={formData.seriesTitle}
+                  maxLength={160}
+                  disabled={submitting}
+                  placeholder="Palette"
+                  onChange={(e) =>
+                    updateField("seriesTitle", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  زیرعنوان مجموعه
+                </span>
+                <input
+                  className={styles.input}
+                  value={formData.seriesTagline}
+                  maxLength={300}
+                  disabled={submitting}
+                  placeholder="Soft tones."
+                  onChange={(e) =>
+                    updateField("seriesTagline", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>
+                  توضیح کوتاه سمت راست
+                </span>
                 <textarea
-                  className={
-                    styles.textarea
-                  }
-                  value={
-                    formData.shortDescription
-                  }
+                  className={styles.textarea}
+                  value={formData.shortDescription}
                   maxLength={500}
                   disabled={submitting}
-                  onChange={(event) =>
+                  onChange={(e) =>
                     updateField(
                       "shortDescription",
-                      event.target.value
+                      e.target.value
                     )
                   }
                 />
               </label>
 
-              <label
-                className={`${styles.field} ${styles.fieldFull}`}
-              >
-                <span
-                  className={styles.label}
-                >
-                  توضیحات کامل
-                </span>
-
-                <textarea
-                  className={
-                    styles.textarea
-                  }
-                  value={
-                    formData.fullDescription
-                  }
-                  maxLength={5000}
-                  disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "fullDescription",
-                      event.target.value
-                    )
-                  }
-                />
-              </label>
             </div>
           </div>
         </article>
 
-        {/* PRICE + STOCK */}
+        {/* متن سمت چپ */}
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              <AlignLeft
+                size={18}
+                style={{ verticalAlign: "middle" }}
+              />
+              {" "}محتوای سمت چپ صفحه محصول
+            </h2>
+
+            <p className={styles.panelSub}>
+              توضیحات، جزئیات و اطلاعات ارسال
+            </p>
+          </header>
+
+          <div className={styles.panelBody}>
+            <div className={styles.gridTwo}>
+
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>
+                  توضیحات اصلی سمت چپ
+                </span>
+                <textarea
+                  className={styles.textarea}
+                  value={formData.leftDescription}
+                  maxLength={5000}
+                  disabled={submitting}
+                  onChange={(e) =>
+                    updateField(
+                      "leftDescription",
+                      e.target.value
+                    )
+                  }
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>
+                  محتوای DETAILS
+                </span>
+                <textarea
+                  className={styles.textarea}
+                  value={formData.detailsContent}
+                  maxLength={5000}
+                  disabled={submitting}
+                  placeholder={
+                    "Leather: Veg-tan Cow Leather\nSize: A5\nFinish: Handcrafted"
+                  }
+                  onChange={(e) =>
+                    updateField(
+                      "detailsContent",
+                      e.target.value
+                    )
+                  }
+                />
+                <p className={styles.help}>
+                  هر مشخصه را در یک خط بنویس.
+                </p>
+              </label>
+
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>
+                  محتوای PREPARATION & SHIPPING
+                </span>
+                <textarea
+                  className={styles.textarea}
+                  value={formData.shippingContent}
+                  maxLength={5000}
+                  disabled={submitting}
+                  placeholder={
+                    "Orders are prepared within 7 working days."
+                  }
+                  onChange={(e) =>
+                    updateField(
+                      "shippingContent",
+                      e.target.value
+                    )
+                  }
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>
+                  توضیحات کامل قدیمی
+                </span>
+                <textarea
+                  className={styles.textarea}
+                  value={formData.fullDescription}
+                  maxLength={5000}
+                  disabled={submitting}
+                  onChange={(e) =>
+                    updateField(
+                      "fullDescription",
+                      e.target.value
+                    )
+                  }
+                />
+              </label>
+
+            </div>
+          </div>
+        </article>
+
+        {/* قیمت و موجودی */}
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
               قیمت و موجودی
             </h2>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={styles.gridTwo}
-            >
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  قیمت — تومان
-                </span>
+          <div className={styles.panelBody}>
+            <div className={styles.gridTwo}>
 
+              <label className={styles.field}>
+                <span className={styles.label}>
+                  قیمت (تومان)
+                </span>
                 <input
                   className={`${styles.input} ${styles.ltr}`}
                   type="number"
@@ -615,24 +735,16 @@ export default function ProductCreateFormClient({
                   step={1}
                   value={formData.price}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "price",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("price", e.target.value)
                   }
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
+              <label className={styles.field}>
+                <span className={styles.label}>
                   موجودی اولیه
                 </span>
-
                 <input
                   className={`${styles.input} ${styles.ltr}`}
                   type="number"
@@ -640,354 +752,101 @@ export default function ProductCreateFormClient({
                   step={1}
                   value={formData.stock}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "stock",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("stock", e.target.value)
                   }
                 />
               </label>
+
             </div>
           </div>
         </article>
 
-        {/* IMAGES */}
+        {/* مشخصات */}
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              تصاویر
-            </h2>
-
-            <p
-              className={styles.panelSub}
-            >
-              تصویر اصلی و تصاویر تکمیلی
-              مستقیماً در فضای ابری Valinor
-              آپلود می‌شوند.
-            </p>
-          </header>
-
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={styles.gridTwo}
-            >
-              <div
-                className={`${styles.field} ${styles.fieldFull}`}
-              >
-                <span
-                  className={styles.label}
-                >
-                  تصویر اصلی
-                </span>
-
-                <ImageUploaderClient
-                  value={
-                    formData.mainImage
-                  }
-                  scope="products"
-                  disabled={submitting}
-                  onChange={(publicUrl) =>
-                    updateField(
-                      "mainImage",
-                      publicUrl
-                    )
-                  }
-                />
-
-                <p className={styles.help}>
-                  این تصویر در کارت محصول،
-                  فهرست محصولات و ابتدای صفحه
-                  محصول استفاده می‌شود.
-                </p>
-              </div>
-
-              <div
-                className={`${styles.field} ${styles.fieldFull}`}
-              >
-                <span
-                  className={styles.label}
-                >
-                  تصاویر تکمیلی
-                </span>
-
-                {formData.images.length >
-                  0 && (
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(120px, 1fr))",
-                      gap: "12px",
-                      marginBottom: "18px",
-                    }}
-                  >
-                    {formData.images.map(
-                      (
-                        imageUrl,
-                        imageIndex
-                      ) => (
-                        <div
-                          key={imageUrl}
-                          style={{
-                            overflow:
-                              "hidden",
-                            border:
-                              "1px solid #e8e4df",
-                            background:
-                              "#fffdf9",
-                          }}
-                        >
-                          <img
-                            src={imageUrl}
-                            alt={`تصویر تکمیلی ${
-                              imageIndex + 1
-                            }`}
-                            style={{
-                              width:
-                                "100%",
-                              aspectRatio:
-                                "1 / 1",
-                              display:
-                                "block",
-                              objectFit:
-                                "cover",
-                              background:
-                                "#f4f0eb",
-                            }}
-                          />
-
-                          <button
-                            type="button"
-                            disabled={
-                              submitting
-                            }
-                            onClick={() =>
-                              removeGalleryImage(
-                                imageIndex
-                              )
-                            }
-                            style={{
-                              width:
-                                "100%",
-                              minHeight:
-                                "36px",
-                              border: 0,
-                              borderTop:
-                                "1px solid #e8e4df",
-                              background:
-                                "#fffdf9",
-                              color:
-                                "#746d67",
-                              font:
-                                "inherit",
-                              fontSize:
-                                "10px",
-                              cursor:
-                                submitting
-                                  ? "not-allowed"
-                                  : "pointer",
-                              opacity:
-                                submitting
-                                  ? 0.5
-                                  : 1,
-                            }}
-                          >
-                            حذف از گالری
-                          </button>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
-
-                <ImageUploaderClient
-                  value=""
-                  scope="products"
-                  disabled={submitting}
-                  onChange={
-                    addGalleryImage
-                  }
-                />
-
-                <p className={styles.help}>
-                  برای اضافه‌کردن تصاویر
-                  بیشتر، هر بار یک تصویر
-                  انتخاب و آپلود کن. حذف از
-                  این بخش فقط اتصال تصویر به
-                  این محصول را حذف می‌کند و
-                  فایل ابری را پاک نمی‌کند.
-                </p>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        {/* DETAILS */}
-        <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              مشخصات
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              <Package
+                size={18}
+                style={{ verticalAlign: "middle" }}
+              />
+              {" "}مشخصات محصول
             </h2>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={styles.gridTwo}
-            >
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  متریال
-                </span>
+          <div className={styles.panelBody}>
+            <div className={styles.gridTwo}>
 
+              <label className={styles.field}>
+                <span className={styles.label}>متریال</span>
                 <input
                   className={styles.input}
-                  type="text"
-                  value={
-                    formData.material
-                  }
+                  value={formData.material}
                   maxLength={200}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "material",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("material", e.target.value)
                   }
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  ابعاد
-                </span>
-
+              <label className={styles.field}>
+                <span className={styles.label}>ابعاد</span>
                 <input
                   className={styles.input}
-                  type="text"
-                  value={
-                    formData.dimensions
-                  }
+                  value={formData.dimensions}
                   maxLength={200}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "dimensions",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("dimensions", e.target.value)
                   }
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  وزن
-                </span>
-
+              <label className={styles.field}>
+                <span className={styles.label}>وزن</span>
                 <input
                   className={styles.input}
-                  type="text"
                   value={formData.weight}
                   maxLength={100}
                   disabled={submitting}
-                  onChange={(event) =>
-                    updateField(
-                      "weight",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("weight", e.target.value)
                   }
                 />
               </label>
 
-              <label
-                className={styles.field}
-              >
-                <span
-                  className={styles.label}
-                >
-                  تگ‌ها
-                </span>
-
+              <label className={styles.field}>
+                <span className={styles.label}>تگ‌ها</span>
                 <input
                   className={styles.input}
-                  type="text"
                   value={formData.tags}
                   disabled={submitting}
                   placeholder="چرم, کیف, دست‌دوز"
-                  onChange={(event) =>
-                    updateField(
-                      "tags",
-                      event.target.value
-                    )
+                  onChange={(e) =>
+                    updateField("tags", e.target.value)
                   }
                 />
-
                 <p className={styles.help}>
-                  تگ‌ها را با کاما از هم جدا
-                  کن.
+                  تگ‌ها را با کاما جدا کن.
                 </p>
               </label>
+
             </div>
           </div>
         </article>
 
-        {/* STATUS */}
+        {/* وضعیت */}
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
               وضعیت فروشگاه
             </h2>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <label
-              className={styles.field}
-            >
-              <span
-                className={styles.label}
-              >
+          <div className={styles.panelBody}>
+            <label className={styles.field}>
+              <span className={styles.label}>
                 وضعیت محصول
               </span>
 
@@ -999,18 +858,16 @@ export default function ProductCreateFormClient({
                     : "unavailable"
                 }
                 disabled={submitting}
-                onChange={(event) =>
+                onChange={(e) =>
                   updateField(
                     "isAvailable",
-                    event.target.value ===
-                      "available"
+                    e.target.value === "available"
                   )
                 }
               >
                 <option value="available">
                   فعال در فروشگاه
                 </option>
-
                 <option value="unavailable">
                   غیرفعال
                 </option>
@@ -1019,16 +876,53 @@ export default function ProductCreateFormClient({
           </div>
         </article>
 
-        {/* ERROR */}
+        {/* پیش‌نمایش متن */}
+        <article className={styles.panel}>
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              پیش‌نمایش محتوای محصول
+            </h2>
+          </header>
+
+          <div className={styles.panelBody}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "20px",
+              }}
+            >
+              <div>
+                <p className={styles.label}>سمت چپ</p>
+                <p className={styles.description}>
+                  {formData.leftDescription ||
+                    "توضیحات سمت چپ اینجا نمایش داده می‌شود."}
+                </p>
+              </div>
+
+              <div>
+                <p className={styles.label}>سمت راست</p>
+                <p className={styles.description}>
+                  {formData.englishName || "نام انگلیسی"}
+                </p>
+                <h3>{formData.seriesTitle || "عنوان مجموعه"}</h3>
+                <p>{formData.seriesTagline || "زیرعنوان"}</p>
+                <p className={styles.description}>
+                  {formData.shortDescription ||
+                    "توضیحات کوتاه محصول"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        {/* خطا */}
         {error && (
           <article className={styles.panel}>
-            <div
-              className={styles.panelBody}
-            >
+            <div className={styles.panelBody}>
               <p
-                className={
-                  styles.description
-                }
+                className={styles.description}
+                style={{ color: "#b42318" }}
               >
                 {error}
               </p>
@@ -1036,26 +930,21 @@ export default function ProductCreateFormClient({
           </article>
         )}
 
-        {/* ACTIONS */}
+        {/* دکمه‌ها */}
         <article className={styles.panel}>
           <div className={styles.actions}>
             <Link
               href="/admin/products"
-              className={
-                styles.cancelLink
-              }
+              className={styles.cancelLink}
             >
               انصراف
             </Link>
 
             <button
               type="submit"
-              className={
-                styles.saveButton
-              }
+              className={styles.saveButton}
               disabled={
-                submitting ||
-                categories.length === 0
+                submitting || categories.length === 0
               }
             >
               {submitting
@@ -1064,87 +953,94 @@ export default function ProductCreateFormClient({
             </button>
           </div>
         </article>
+
       </div>
 
-      {/* SIDE */}
+      {/* ستون پیش‌نمایش */}
       <aside className={styles.side}>
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
-              پیش‌نمایش
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              پیش‌نمایش تصاویر
             </h2>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={
-                styles.imagePreview
-              }
-            >
+          <div className={styles.panelBody}>
+            <div className={styles.imagePreview}>
               {formData.mainImage ? (
                 <img
-                  src={
-                    formData.mainImage
-                  }
-                  alt={
-                    formData.name ||
-                    "Product"
-                  }
+                  src={formData.mainImage}
+                  alt={formData.name || "Product"}
                 />
               ) : (
-                <div
-                  className={
-                    styles.imageFallback
-                  }
-                >
-                  V
+                <div className={styles.imageFallback}>
+                  <ImagePlus size={28} />
                 </div>
               )}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 1fr)",
+                gap: "5px",
+                marginTop: "10px",
+              }}
+            >
+              {Array.from({ length: 5 }, (_, index) => {
+                const url = getImageAt(index);
+
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      aspectRatio: "1 / 1",
+                      overflow: "hidden",
+                      background: "#f4f0eb",
+                      border: "1px solid #e8e4df",
+                    }}
+                  >
+                    {url ? (
+                      <img
+                        src={url}
+                        alt={`تصویر ${index + 2}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          height: "100%",
+                          display: "grid",
+                          placeItems: "center",
+                          color: "#aaa",
+                          fontSize: "11px",
+                        }}
+                      >
+                        {index + 2}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </article>
 
         <article className={styles.panel}>
-          <header
-            className={
-              styles.panelHeader
-            }
-          >
-            <h2
-              className={
-                styles.panelTitle
-              }
-            >
+          <header className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
               وضعیت اولیه
             </h2>
           </header>
 
-          <div
-            className={styles.panelBody}
-          >
-            <div
-              className={styles.statusBox}
-            >
-              <div
-                className={
-                  styles.statusRow
-                }
-              >
-                <span
-                  className={
-                    styles.statusLabel
-                  }
-                >
+          <div className={styles.panelBody}>
+            <div className={styles.statusBox}>
+              <div className={styles.statusRow}>
+                <span className={styles.statusLabel}>
                   نمایش
                 </span>
 
@@ -1155,31 +1051,28 @@ export default function ProductCreateFormClient({
                       : styles.unavailable
                   }`}
                 >
-                  {formData.isAvailable
-                    ? "فعال"
-                    : "غیرفعال"}
+                  {formData.isAvailable ? "فعال" : "غیرفعال"}
                 </strong>
               </div>
 
-              <div
-                className={
-                  styles.statusRow
-                }
-              >
-                <span
-                  className={
-                    styles.statusLabel
-                  }
-                >
+              <div className={styles.statusRow}>
+                <span className={styles.statusLabel}>
                   موجودی
                 </span>
 
-                <strong
-                  className={
-                    styles.statusValue
-                  }
-                >
+                <strong className={styles.statusValue}>
                   {formData.stock || "۰"}
+                </strong>
+              </div>
+
+              <div className={styles.statusRow}>
+                <span className={styles.statusLabel}>
+                  تصاویر انتخاب‌شده
+                </span>
+
+                <strong className={styles.statusValue}>
+                  {Number(Boolean(formData.mainImage)) +
+                    formData.images.length} / 6
                 </strong>
               </div>
             </div>

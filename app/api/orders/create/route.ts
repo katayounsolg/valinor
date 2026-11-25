@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 
 import { prisma } from "@/app/lib/prisma";
-import { getCurrentUser } from "@/app/lib/auth";
 import { Prisma } from "@/app/generated/prisma/client";
 
 const SHIPPING_PRICE = 150_000;
@@ -104,33 +103,9 @@ function orderResponse(order: {
 
 export async function POST(request: Request) {
   let requestKey = "";
-  let authenticatedUserId: number | null = null;
+  let submittedPhone = "";
 
   try {
-    /*
-      فقط کاربر لاگین‌شده می‌تواند سفارش بسازد.
-    */
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "UNAUTHORIZED",
-          message:
-            "برای ثبت سفارش باید وارد حساب کاربری شوید.",
-        },
-        { status: 401 }
-      );
-    }
-
-    /*
-      userId را خارج از try نیز نگه می‌داریم
-      تا در مسیر race condition بتوانیم
-      مالکیت requestKey را دوباره بررسی کنیم.
-    */
-    authenticatedUserId = user.id;
-
     const body = (await request
       .json()
       .catch(() => null)) as CheckoutBody | null;
@@ -172,6 +147,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // تطبیق شماره گیرنده هنگام تلاش دوباره برای ثبت همان سفارش
+    submittedPhone = normalizePhone(cleanText(body.recipientPhone));
+    if (!/^09\d{9}$/.test(submittedPhone)) {
+      return NextResponse.json(
+        { success: false, code: "INVALID_PHONE", message: "شماره موبایل گیرنده معتبر نیست." },
+        { status: 400 }
+      );
+    }
+
     /*
       اگر همین درخواست قبلاً ثبت شده،
       سفارش جدید نمی‌سازیم.
@@ -185,6 +169,7 @@ export async function POST(request: Request) {
         select: {
           id: true,
           userId: true,
+          recipientPhone: true,
 
           orderNumber: true,
 
@@ -205,7 +190,8 @@ export async function POST(request: Request) {
         requestKey نباید بین دو کاربر مشترک باشد.
       */
       if (
-        existingOrder.userId !== user.id
+        existingOrder.userId !== null ||
+        existingOrder.recipientPhone !== submittedPhone
       ) {
         return NextResponse.json(
           {
@@ -618,7 +604,7 @@ export async function POST(request: Request) {
               orderNumber,
               requestKey,
 
-              userId: user.id,
+              userId: null,
 
               status: "PENDING",
               paymentStatus:
@@ -696,7 +682,7 @@ export async function POST(request: Request) {
         Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002" &&
       requestKey &&
-      authenticatedUserId !== null
+      submittedPhone.length > 0
     ) {
       const existingOrder =
         await prisma.order.findUnique({
@@ -707,6 +693,7 @@ export async function POST(request: Request) {
           select: {
             id: true,
             userId: true,
+            recipientPhone: true,
 
             orderNumber: true,
 
@@ -729,8 +716,8 @@ export async function POST(request: Request) {
           برگردانده شود.
         */
         if (
-          existingOrder.userId !==
-          authenticatedUserId
+          existingOrder.userId !== null ||
+          existingOrder.recipientPhone !== submittedPhone
         ) {
           return NextResponse.json(
             {

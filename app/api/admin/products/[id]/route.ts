@@ -1,14 +1,12 @@
-import { NextResponse } from "next/server";
 
+import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { getCurrentUser } from "@/app/lib/auth";
 import { deleteMediaIfUnreferenced } from "@/app/lib/mediaCleanup";
 import { Prisma } from "@/app/generated/prisma/client";
 
 type Props = {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 };
 
 type UpdateProductBody = {
@@ -18,34 +16,55 @@ type UpdateProductBody = {
   price?: unknown;
   stock?: unknown;
   isAvailable?: unknown;
+
   mainImage?: unknown;
   images?: unknown;
+
+  shortDescription?: unknown;
+  fullDescription?: unknown;
+  leftDescription?: unknown;
+  detailsContent?: unknown;
+  shippingContent?: unknown;
+
+  englishName?: unknown;
+  seriesTitle?: unknown;
+  seriesTagline?: unknown;
+
+  tags?: unknown;
+
+  material?: unknown;
+  dimensions?: unknown;
+  weight?: unknown;
 };
 
-const MAX_GALLERY_IMAGES = 12;
+const MAX_GALLERY_IMAGES = 5;
 const MAX_IMAGE_URL_LENGTH = 1000;
 
-function cleanText(value: unknown) {
+const TEXT_LIMITS = {
+  shortDescription: 500,
+  fullDescription: 5000,
+  leftDescription: 5000,
+  detailsContent: 5000,
+  shippingContent: 5000,
+  englishName: 160,
+  seriesTitle: 160,
+  seriesTagline: 300,
+  material: 200,
+  dimensions: 200,
+  weight: 100,
+};
+
+function cleanText(value: unknown): string {
   return typeof value === "string"
     ? value.trim()
     : "";
 }
 
-function isValidImageReference(
-  value: string
-) {
-  if (
-    !value ||
-    value.length >
-      MAX_IMAGE_URL_LENGTH
-  ) {
+function isValidImageReference(value: string): boolean {
+  if (!value || value.length > MAX_IMAGE_URL_LENGTH) {
     return false;
   }
 
-  /*
-    تصاویر قدیمی local را هم فعلاً
-    پشتیبانی می‌کنیم.
-  */
   if (value.startsWith("/")) {
     return true;
   }
@@ -62,9 +81,7 @@ function isValidImageReference(
   }
 }
 
-function normalizeImages(
-  value: unknown
-): string[] | null {
+function normalizeImages(value: unknown): string[] | null {
   if (!Array.isArray(value)) {
     return null;
   }
@@ -78,13 +95,9 @@ function normalizeImages(
 
     const image = item.trim();
 
-    if (!image) {
-      continue;
-    }
+    if (!image) continue;
 
-    if (
-      !isValidImageReference(image)
-    ) {
+    if (!isValidImageReference(image)) {
       return null;
     }
 
@@ -93,22 +106,72 @@ function normalizeImages(
     }
   }
 
-  if (
-    images.length >
-    MAX_GALLERY_IMAGES
-  ) {
+  return images.length <= MAX_GALLERY_IMAGES
+    ? images
+    : null;
+}
+
+function normalizeTags(value: unknown): string[] | null {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  let items: unknown[];
+
+  if (Array.isArray(value)) {
+    items = value;
+  } else if (typeof value === "string") {
+    items = value.split(",");
+  } else {
     return null;
   }
 
-  return images;
+  const tags: string[] = [];
+
+  for (const item of items) {
+    if (typeof item !== "string") {
+      return null;
+    }
+
+    const tag = item.trim();
+
+    if (!tag) continue;
+
+    if (tag.length > 100) {
+      return null;
+    }
+
+    if (!tags.includes(tag)) {
+      tags.push(tag);
+    }
+  }
+
+  return tags.length <= 30 ? tags : null;
 }
 
-function parseStoredImages(
-  value: string
-): string[] | null {
+function normalizeOptionalText(
+  value: unknown,
+  maxLength: number
+): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const text = value.trim();
+
+  if (text.length > maxLength) {
+    return undefined;
+  }
+
+  return text || null;
+}
+
+function parseStoredImages(value: string): string[] | null {
   try {
-    const parsed =
-      JSON.parse(value);
+    const parsed: unknown = JSON.parse(value);
 
     if (!Array.isArray(parsed)) {
       return null;
@@ -123,10 +186,7 @@ function parseStoredImages(
 
       const image = item.trim();
 
-      if (
-        image &&
-        !images.includes(image)
-      ) {
+      if (image && !images.includes(image)) {
         images.push(image);
       }
     }
@@ -137,645 +197,88 @@ function parseStoredImages(
   }
 }
 
-/*
-  Cleanup نباید موفقیت عملیات اصلی
-  محصول را خراب کند.
+// =========================================
+// ADMIN AUTH
+// =========================================
 
-  اگر Storage موقتاً در دسترس نباشد،
-  تغییر دیتابیس همچنان معتبر می‌ماند.
-*/
-async function cleanupMediaUrls(
-  urls: string[]
-) {
-  const uniqueUrls =
-    Array.from(
-      new Set(
-        urls
-          .map((url) =>
-            url.trim()
-          )
-          .filter(Boolean)
-      )
-    );
+async function requireAdmin() {
+  const user = await getCurrentUser();
 
-  const results =
-    await Promise.allSettled(
-      uniqueUrls.map((url) =>
-        deleteMediaIfUnreferenced(
-          url
-        )
-      )
-    );
+  if (!user) {
+    return {
+      response: NextResponse.json(
+        {
+          success: false,
+          code: "UNAUTHORIZED",
+          message: "ابتدا وارد حساب کاربری شوید.",
+        },
+        { status: 401 }
+      ),
+    };
+  }
 
-  results.forEach(
-    (result, index) => {
-      if (
-        result.status ===
-        "rejected"
-      ) {
-        console.error(
-          "Product media cleanup failed:",
-          {
-            url:
-              uniqueUrls[index],
-            error:
-              result.reason,
-          }
-        );
-      }
-    }
-  );
+  if (user.role !== "ADMIN") {
+    return {
+      response: NextResponse.json(
+        {
+          success: false,
+          code: "FORBIDDEN",
+          message: "اجازه مدیریت محصولات را ندارید.",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { response: null };
 }
 
-/*
-  =========================================================
-  UPDATE PRODUCT
-  =========================================================
-*/
+// =========================================
+// MEDIA CLEANUP
+// =========================================
+
+async function cleanupMediaUrls(urls: string[]) {
+  const uniqueUrls = Array.from(
+    new Set(
+      urls.map((url) => url.trim()).filter(Boolean)
+    )
+  );
+
+  const results = await Promise.allSettled(
+    uniqueUrls.map((url) =>
+      deleteMediaIfUnreferenced(url)
+    )
+  );
+
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(
+        "Product media cleanup failed:",
+        {
+          url: uniqueUrls[index],
+          error: result.reason,
+        }
+      );
+    }
+  });
+}
+
+// =========================================
+// UPDATE PRODUCT
+// =========================================
 
 export async function PATCH(
   request: Request,
   { params }: Props
 ) {
   try {
-    const user =
-      await getCurrentUser();
+    const auth = await requireAdmin();
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "UNAUTHORIZED",
-          message:
-            "برای انجام این عملیات باید وارد حساب کاربری شوید.",
-        },
-        { status: 401 }
-      );
-    }
-
-    if (user.role !== "ADMIN") {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "FORBIDDEN",
-          message:
-            "اجازه ویرایش محصولات را ندارید.",
-        },
-        { status: 403 }
-      );
+    if (auth.response) {
+      return auth.response;
     }
 
     const { id } = await params;
-
-    const productId = Number(id);
-
-    if (
-      !Number.isInteger(
-        productId
-      ) ||
-      productId < 1
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_PRODUCT_ID",
-          message:
-            "شناسه محصول معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const body = (await request
-      .json()
-      .catch(() => null)) as
-      | UpdateProductBody
-      | null;
-
-    if (!body) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_REQUEST",
-          message:
-            "اطلاعات ارسال‌شده معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const name =
-      cleanText(body.name);
-
-    const slug =
-      cleanText(body.slug);
-
-    const mainImage =
-      cleanText(
-        body.mainImage
-      );
-
-    /*
-      مقدار خالی نباید به‌طور ضمنی
-      به صفر تبدیل شود.
-    */
-    if (
-      typeof body.categoryId !==
-        "number" ||
-      !Number.isInteger(
-        body.categoryId
-      ) ||
-      body.categoryId < 1
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_CATEGORY",
-          message:
-            "دسته‌بندی انتخاب‌شده معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      typeof body.price !==
-        "number" ||
-      !Number.isSafeInteger(
-        body.price
-      ) ||
-      body.price < 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_PRICE",
-          message:
-            "قیمت محصول معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      typeof body.stock !==
-        "number" ||
-      !Number.isSafeInteger(
-        body.stock
-      ) ||
-      body.stock < 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_STOCK",
-          message:
-            "موجودی محصول معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const categoryId =
-      body.categoryId;
-
-    const price = body.price;
-    const stock = body.stock;
-
-    if (
-      name.length < 2 ||
-      name.length > 160
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "INVALID_NAME",
-          message:
-            "نام محصول باید بین ۲ تا ۱۶۰ کاراکتر باشد.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      slug.length < 2 ||
-      slug.length > 160 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-        slug
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_SLUG",
-          message:
-            "Slug محصول معتبر نیست. فقط حروف انگلیسی کوچک، عدد و خط تیره مجاز است.",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      !isValidImageReference(
-        mainImage
-      )
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_IMAGE",
-          message:
-            "تصویر اصلی محصول معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    let images:
-      | string[]
-      | undefined;
-
-    if (
-      body.images !== undefined
-    ) {
-      const normalizedImages =
-        normalizeImages(
-          body.images
-        );
-
-      if (!normalizedImages) {
-        return NextResponse.json(
-          {
-            success: false,
-            code:
-              "INVALID_IMAGES",
-            message:
-              `تصاویر تکمیلی معتبر نیستند. حداکثر ${MAX_GALLERY_IMAGES} تصویر مجاز است.`,
-          },
-          { status: 400 }
-        );
-      }
-
-      images =
-        normalizedImages;
-    }
-
-    if (
-      body.isAvailable !==
-        undefined &&
-      typeof body.isAvailable !==
-        "boolean"
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "INVALID_AVAILABILITY",
-          message:
-            "وضعیت نمایش محصول معتبر نیست.",
-        },
-        { status: 400 }
-      );
-    }
-
-    /*
-      اطلاعات قبلی تصاویر را هم می‌گیریم
-      تا بعد از UPDATE بفهمیم کدام فایل‌ها
-      واقعاً حذف شده‌اند.
-    */
-    const [
-      existingProduct,
-      category,
-    ] = await Promise.all([
-      prisma.product.findUnique({
-        where: {
-          id: productId,
-        },
-
-        select: {
-          id: true,
-          mainImage: true,
-          images: true,
-        },
-      }),
-
-      prisma.category.findUnique({
-        where: {
-          id: categoryId,
-        },
-
-        select: {
-          id: true,
-        },
-      }),
-    ]);
-
-    if (!existingProduct) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "PRODUCT_NOT_FOUND",
-          message:
-            "محصول موردنظر پیدا نشد.",
-        },
-        { status: 404 }
-      );
-    }
-
-    if (!category) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "CATEGORY_NOT_FOUND",
-          message:
-            "دسته‌بندی انتخاب‌شده وجود ندارد.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const previousGallery =
-      parseStoredImages(
-        existingProduct.images
-      );
-
-    /*
-      اول دیتابیس را به وضعیت جدید
-      می‌بریم.
-    */
-    const updatedProduct =
-      await prisma.product.update({
-        where: {
-          id: productId,
-        },
-
-        data: {
-          name,
-          slug,
-          categoryId,
-          price,
-          stock,
-          mainImage,
-
-          ...(images !==
-          undefined
-            ? {
-                images:
-                  JSON.stringify(
-                    images
-                  ),
-              }
-            : {}),
-
-          ...(typeof body.isAvailable ===
-          "boolean"
-            ? {
-                isAvailable:
-                  body.isAvailable,
-              }
-            : {}),
-        },
-
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          price: true,
-          stock: true,
-          isAvailable: true,
-          mainImage: true,
-          images: true,
-          categoryId: true,
-          updatedAt: true,
-        },
-      });
-
-    let parsedImages:
-      string[] = [];
-
-    try {
-      const parsed =
-        JSON.parse(
-          updatedProduct.images
-        );
-
-      if (
-        Array.isArray(parsed)
-      ) {
-        parsedImages =
-          parsed.filter(
-            (
-              item
-            ): item is string =>
-              typeof item ===
-              "string"
-          );
-      }
-    } catch {
-      parsedImages = [];
-    }
-
-    /*
-      =====================================================
-      CLEANUP REMOVED MEDIA
-      =====================================================
-
-      بعد از موفقیت UPDATE:
-
-      - تصویر اصلی قبلی
-      - تصاویر قبلی گالری
-
-      را با وضعیت جدید مقایسه می‌کنیم.
-    */
-
-    const currentImageUrls =
-      new Set([
-        updatedProduct.mainImage,
-        ...parsedImages,
-      ]);
-
-    const cleanupCandidates:
-      string[] = [];
-
-    /*
-      تصویر اصلی قدیمی فقط زمانی کاندید
-      حذف است که دیگر در فرم جدید حضور
-      نداشته باشد.
-    */
-    if (
-      existingProduct.mainImage &&
-      !currentImageUrls.has(
-        existingProduct.mainImage
-      )
-    ) {
-      cleanupCandidates.push(
-        existingProduct.mainImage
-      );
-    }
-
-    /*
-      اگر JSON گالری قبلی سالم باشد،
-      فایل‌های حذف‌شده را پیدا می‌کنیم.
-
-      اگر JSON خراب باشد، محافظه‌کارانه
-      چیزی از آن حذف نمی‌کنیم.
-    */
-    if (previousGallery) {
-      for (
-        const previousImage of
-        previousGallery
-      ) {
-        if (
-          !currentImageUrls.has(
-            previousImage
-          )
-        ) {
-          cleanupCandidates.push(
-            previousImage
-          );
-        }
-      }
-    }
-
-    /*
-      Helper دوباره کل دیتابیس را بررسی
-      می‌کند؛ بنابراین اگر همین تصویر در
-      محصول یا دسته‌بندی دیگری استفاده شده
-      باشد، فایل از Storage پاک نمی‌شود.
-    */
-    if (
-      cleanupCandidates.length >
-      0
-    ) {
-      await cleanupMediaUrls(
-        cleanupCandidates
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-
-        product: {
-          id:
-            updatedProduct.id,
-          name:
-            updatedProduct.name,
-          slug:
-            updatedProduct.slug,
-          price:
-            updatedProduct.price,
-          stock:
-            updatedProduct.stock,
-          isAvailable:
-            updatedProduct.isAvailable,
-          mainImage:
-            updatedProduct.mainImage,
-          images:
-            parsedImages,
-          categoryId:
-            updatedProduct.categoryId,
-          updatedAt:
-            updatedProduct.updatedAt,
-        },
-      },
-      {
-        status: 200,
-
-        headers: {
-          "Cache-Control":
-            "no-store",
-        },
-      }
-    );
-  } catch (error) {
-    if (
-      error instanceof
-        Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          code:
-            "SLUG_ALREADY_EXISTS",
-          message:
-            "این Slug قبلاً برای محصول دیگری استفاده شده است.",
-        },
-        { status: 409 }
-      );
-    }
-
-    console.error(
-      "Admin product update failed:",
-      error
-    );
-
-    return NextResponse.json(
-      {
-        success: false,
-        code:
-          "INTERNAL_ERROR",
-        message:
-          "ویرایش محصول با خطا روبه‌رو شد.",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/*
-  =========================================================
-  DELETE PRODUCT
-  =========================================================
-
-  فعلاً منطق حذف Storage را اینجا
-  اضافه نمی‌کنیم؛ قدم بعدی دقیقاً همین است.
-*/
-
-export async function DELETE(
-  _request: Request,
-  { params }: Props
-) {
-  try {
-    const user =
-      await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "UNAUTHORIZED",
-          message:
-            "برای انجام این عملیات باید وارد حساب کاربری شوید.",
-        },
-        { status: 401 }
-      );
-    }
-
-    if (user.role !== "ADMIN") {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "FORBIDDEN",
-          message:
-            "اجازه حذف محصولات را ندارید.",
-        },
-        { status: 403 }
-      );
-    }
-
-    const { id } = await params;
-
     const productId = Number(id);
 
     if (
@@ -786,89 +289,499 @@ export async function DELETE(
         {
           success: false,
           code: "INVALID_PRODUCT_ID",
-          message:
-            "شناسه محصول معتبر نیست.",
+          message: "شناسه محصول معتبر نیست.",
         },
         { status: 400 }
       );
     }
 
-    /*
-      قبل از حذف محصول، URL تمام تصاویر
-      آن را نگه می‌داریم.
+    const body = (await request
+      .json()
+      .catch(() => null)) as UpdateProductBody | null;
 
-      بعد از حذف DB بررسی می‌کنیم آیا
-      هنوز جای دیگری به آن‌ها reference
-      وجود دارد یا نه.
-    */
-    const product =
-      await prisma.product.findUnique({
-        where: {
-          id: productId,
+    if (!body) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_REQUEST",
+          message: "اطلاعات ارسالی معتبر نیست.",
         },
+        { status: 400 }
+      );
+    }
 
+    // اطلاعات اصلی
+
+    const name = cleanText(body.name);
+    const slug = cleanText(body.slug);
+
+    if (name.length < 2 || name.length > 160) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_NAME",
+          message: "نام محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      slug.length < 2 ||
+      slug.length > 160 ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_SLUG",
+          message: "Slug محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body.categoryId !== "number" ||
+      !Number.isInteger(body.categoryId) ||
+      body.categoryId < 1
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_CATEGORY",
+          message: "دسته‌بندی معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body.price !== "number" ||
+      !Number.isSafeInteger(body.price) ||
+      body.price < 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_PRICE",
+          message: "قیمت محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof body.stock !== "number" ||
+      !Number.isSafeInteger(body.stock) ||
+      body.stock < 0
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_STOCK",
+          message: "موجودی محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body.isAvailable !== "boolean") {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_AVAILABILITY",
+          message: "وضعیت محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const categoryId = body.categoryId;
+    const price = body.price;
+    const stock = body.stock;
+
+    // تصویر اصلی
+
+    const mainImage = cleanText(body.mainImage);
+
+    if (!isValidImageReference(mainImage)) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_IMAGE",
+          message: "تصویر اصلی معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // پنج تصویر تکمیلی
+
+    const images = normalizeImages(body.images);
+
+    if (!images) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_IMAGES",
+          message: "حداکثر پنج تصویر تکمیلی مجاز است.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // متن‌های اختصاصی صفحه محصول
+
+    const shortDescription = normalizeOptionalText(
+      body.shortDescription,
+      TEXT_LIMITS.shortDescription
+    );
+
+    const fullDescription = normalizeOptionalText(
+      body.fullDescription,
+      TEXT_LIMITS.fullDescription
+    );
+
+    const leftDescription = normalizeOptionalText(
+      body.leftDescription,
+      TEXT_LIMITS.leftDescription
+    );
+
+    const detailsContent = normalizeOptionalText(
+      body.detailsContent,
+      TEXT_LIMITS.detailsContent
+    );
+
+    const shippingContent = normalizeOptionalText(
+      body.shippingContent,
+      TEXT_LIMITS.shippingContent
+    );
+
+    const englishName = normalizeOptionalText(
+      body.englishName,
+      TEXT_LIMITS.englishName
+    );
+
+    const seriesTitle = normalizeOptionalText(
+      body.seriesTitle,
+      TEXT_LIMITS.seriesTitle
+    );
+
+    const seriesTagline = normalizeOptionalText(
+      body.seriesTagline,
+      TEXT_LIMITS.seriesTagline
+    );
+
+    const material = normalizeOptionalText(
+      body.material,
+      TEXT_LIMITS.material
+    );
+
+    const dimensions = normalizeOptionalText(
+      body.dimensions,
+      TEXT_LIMITS.dimensions
+    );
+
+    const weight = normalizeOptionalText(
+      body.weight,
+      TEXT_LIMITS.weight
+    );
+
+    const textFields = [
+      shortDescription,
+      fullDescription,
+      leftDescription,
+      detailsContent,
+      shippingContent,
+      englishName,
+      seriesTitle,
+      seriesTagline,
+      material,
+      dimensions,
+      weight,
+    ];
+
+    if (textFields.some((field) => field === undefined)) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_TEXT",
+          message: "یکی از متن‌ها معتبر نیست یا بیش از حد طولانی است.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // تگ‌ها
+
+    const tags = normalizeTags(body.tags);
+
+    if (!tags) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_TAGS",
+          message: "تگ‌های محصول معتبر نیستند.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // بررسی محصول و دسته‌بندی
+
+    const [existingProduct, category] = await Promise.all([
+      prisma.product.findUnique({
+        where: { id: productId },
         select: {
           id: true,
-          name: true,
-          slug: true,
           mainImage: true,
           images: true,
         },
-      });
+      }),
+
+      prisma.category.findUnique({
+        where: { id: categoryId },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "PRODUCT_NOT_FOUND",
+          message: "محصول پیدا نشد.",
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!category) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "CATEGORY_NOT_FOUND",
+          message: "دسته‌بندی پیدا نشد.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ذخیره تغییرات
+
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+
+      data: {
+        name,
+        slug,
+        categoryId,
+        price,
+        stock,
+        isAvailable: body.isAvailable,
+
+        mainImage,
+        images: JSON.stringify(images),
+        tags: JSON.stringify(tags),
+
+        shortDescription,
+        fullDescription,
+
+        leftDescription,
+        detailsContent,
+        shippingContent,
+
+        englishName,
+        seriesTitle,
+        seriesTagline,
+
+        material,
+        dimensions,
+        weight,
+      },
+
+      // نکته مهم: تمام مقادیر select باید true باشند.
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        price: true,
+        stock: true,
+        isAvailable: true,
+
+        mainImage: true,
+        images: true,
+        tags: true,
+
+        shortDescription: true,
+        fullDescription: true,
+
+        leftDescription: true,
+        detailsContent: true,
+        shippingContent: true,
+
+        englishName: true,
+        seriesTitle: true,
+        seriesTagline: true,
+
+        material: true,
+        dimensions: true,
+        weight: true,
+
+        categoryId: true,
+        updatedAt: true,
+      },
+    });
+
+    // پاک‌سازی تصاویر قدیمی که دیگر استفاده نمی‌شوند
+
+    const previousGallery = parseStoredImages(
+      existingProduct.images
+    );
+
+    const currentImageUrls = new Set([
+      updatedProduct.mainImage,
+      ...images,
+    ]);
+
+    const cleanupCandidates: string[] = [];
+
+    if (
+      existingProduct.mainImage &&
+      !currentImageUrls.has(existingProduct.mainImage)
+    ) {
+      cleanupCandidates.push(existingProduct.mainImage);
+    }
+
+    if (previousGallery) {
+      for (const oldImage of previousGallery) {
+        if (!currentImageUrls.has(oldImage)) {
+          cleanupCandidates.push(oldImage);
+        }
+      }
+    }
+
+    if (cleanupCandidates.length > 0) {
+      await cleanupMediaUrls(cleanupCandidates);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "محصول با موفقیت ویرایش شد.",
+        product: {
+          ...updatedProduct,
+          images,
+          tags,
+        },
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "SLUG_ALREADY_EXISTS",
+          message: "این Slug قبلاً استفاده شده است.",
+        },
+        { status: 409 }
+      );
+    }
+
+    console.error("Admin product update failed:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        code: "INTERNAL_ERROR",
+        message: "ویرایش محصول با خطا روبه‌رو شد.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// =========================================
+// DELETE PRODUCT
+// =========================================
+
+export async function DELETE(
+  _request: Request,
+  { params }: Props
+) {
+  try {
+    const auth = await requireAdmin();
+
+    if (auth.response) {
+      return auth.response;
+    }
+
+    const { id } = await params;
+    const productId = Number(id);
+
+    if (
+      !Number.isInteger(productId) ||
+      productId < 1
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "INVALID_PRODUCT_ID",
+          message: "شناسه محصول معتبر نیست.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        mainImage: true,
+        images: true,
+      },
+    });
 
     if (!product) {
       return NextResponse.json(
         {
           success: false,
           code: "PRODUCT_NOT_FOUND",
-          message:
-            "محصول موردنظر پیدا نشد.",
+          message: "محصول پیدا نشد.",
         },
         { status: 404 }
       );
     }
 
-    const galleryImages =
-      parseStoredImages(
-        product.images
-      );
+    const galleryImages = parseStoredImages(
+      product.images
+    );
 
-    /*
-      اول محصول از دیتابیس حذف می‌شود.
-
-      این ترتیب مهم است؛ چون تا زمانی
-      که محصول هنوز وجود دارد، helper
-      تصویر را IN_USE تشخیص می‌دهد.
-    */
     await prisma.product.delete({
-      where: {
-        id: productId,
-      },
+      where: { id: productId },
     });
 
-    /*
-      بعد از موفقیت حذف DB، تصاویر
-      کاندید cleanup می‌شوند.
-
-      اگر یک تصویر در محصول یا
-      دسته‌بندی دیگری استفاده شده باشد،
-      deleteMediaIfUnreferenced آن را
-      از Storage حذف نمی‌کند.
-    */
-    const cleanupCandidates = [
+    await cleanupMediaUrls([
       product.mainImage,
-
       ...(galleryImages ?? []),
-    ];
-
-    await cleanupMediaUrls(
-      cleanupCandidates
-    );
+    ]);
 
     return NextResponse.json(
       {
         success: true,
-
+        message: "محصول با موفقیت حذف شد.",
         product: {
           id: product.id,
           name: product.name,
@@ -877,42 +790,33 @@ export async function DELETE(
       },
       {
         status: 200,
-
         headers: {
-          "Cache-Control":
-            "no-store",
+          "Cache-Control": "no-store",
         },
       }
     );
   } catch (error) {
     if (
-      error instanceof
-        Prisma.PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2003"
     ) {
       return NextResponse.json(
         {
           success: false,
-          code:
-            "PRODUCT_DELETE_CONFLICT",
-          message:
-            "این محصول به اطلاعات دیگری وابسته است و فعلاً امکان حذف دائمی آن وجود ندارد.",
+          code: "PRODUCT_DELETE_CONFLICT",
+          message: "این محصول به اطلاعات دیگری وابسته است.",
         },
         { status: 409 }
       );
     }
 
-    console.error(
-      "Admin product deletion failed:",
-      error
-    );
+    console.error("Admin product deletion failed:", error);
 
     return NextResponse.json(
       {
         success: false,
         code: "INTERNAL_ERROR",
-        message:
-          "حذف محصول با خطا روبه‌رو شد.",
+        message: "حذف محصول با خطا روبه‌رو شد.",
       },
       { status: 500 }
     );

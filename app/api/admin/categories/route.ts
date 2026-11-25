@@ -4,16 +4,17 @@ import { prisma } from "@/app/lib/prisma";
 import { getCurrentUser } from "@/app/lib/auth";
 import { Prisma } from "@/app/generated/prisma/client";
 
+export const runtime = "nodejs";
+
 type CreateCategoryBody = {
   title?: unknown;
   slug?: unknown;
   image?: unknown;
+  objectGroupId?: unknown;
 };
 
-function cleanText(value: unknown) {
-  return typeof value === "string"
-    ? value.trim()
-    : "";
+function cleanText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 export async function POST(request: Request) {
@@ -25,8 +26,7 @@ export async function POST(request: Request) {
         {
           success: false,
           code: "UNAUTHORIZED",
-          message:
-            "برای انجام این عملیات باید وارد حساب کاربری شوید.",
+          message: "برای انجام این عملیات باید وارد حساب کاربری شوید.",
         },
         { status: 401 }
       );
@@ -37,45 +37,36 @@ export async function POST(request: Request) {
         {
           success: false,
           code: "FORBIDDEN",
-          message:
-            "اجازه افزودن دسته‌بندی را ندارید.",
+          message: "اجازه افزودن دسته‌بندی را ندارید.",
         },
         { status: 403 }
       );
     }
 
-    const body = (await request
-      .json()
-      .catch(() => null)) as
-      | CreateCategoryBody
-      | null;
+    const body: unknown = await request.json().catch(() => null);
 
-    if (!body) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json(
         {
           success: false,
           code: "INVALID_REQUEST",
-          message:
-            "اطلاعات ارسال‌شده معتبر نیست.",
+          message: "اطلاعات ارسال‌شده معتبر نیست.",
         },
         { status: 400 }
       );
     }
 
-    const title = cleanText(body.title);
-    const slug = cleanText(body.slug);
-    const image = cleanText(body.image);
+    const input = body as CreateCategoryBody;
+    const title = cleanText(input.title);
+    const slug = cleanText(input.slug);
+    const image = cleanText(input.image);
 
-    if (
-      title.length < 2 ||
-      title.length > 120
-    ) {
+    if (title.length < 2 || title.length > 120) {
       return NextResponse.json(
         {
           success: false,
           code: "INVALID_TITLE",
-          message:
-            "عنوان دسته‌بندی باید بین ۲ تا ۱۲۰ کاراکتر باشد.",
+          message: "عنوان دسته‌بندی باید بین ۲ تا ۱۲۰ کاراکتر باشد.",
         },
         { status: 400 }
       );
@@ -84,94 +75,110 @@ export async function POST(request: Request) {
     if (
       slug.length < 2 ||
       slug.length > 120 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-        slug
-      )
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
     ) {
       return NextResponse.json(
         {
           success: false,
           code: "INVALID_SLUG",
-          message:
-            "Slug معتبر نیست. فقط حروف انگلیسی کوچک، عدد و خط تیره مجاز است.",
+          message: "Slug معتبر نیست. فقط حروف انگلیسی کوچک، عدد و خط تیره مجاز است.",
         },
         { status: 400 }
       );
     }
 
-    if (
-      !image ||
-      image.length > 1000
-    ) {
+    if (!image || image.length > 1000) {
       return NextResponse.json(
         {
           success: false,
           code: "INVALID_IMAGE",
-          message:
-            "مسیر تصویر دسته‌بندی معتبر نیست.",
+          message: "مسیر تصویر دسته‌بندی معتبر نیست.",
         },
         { status: 400 }
       );
     }
 
-    const category =
-      await prisma.category.create({
-        data: {
-          title,
-          slug,
-          image,
-        },
+    let objectGroupId: number | null = null;
 
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          image: true,
-          createdAt: true,
-        },
+    if (input.objectGroupId !== undefined && input.objectGroupId !== null && input.objectGroupId !== "") {
+      const groupId = Number(input.objectGroupId);
+
+      if (!Number.isSafeInteger(groupId) || groupId <= 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "INVALID_OBJECT_GROUP",
+            message: "گروه انتخاب‌شده معتبر نیست.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const group = await prisma.objectGroup.findUnique({
+        where: { id: groupId },
+        select: { id: true },
       });
 
-    return NextResponse.json(
-      {
-        success: true,
-        category,
+      if (!group) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: "OBJECT_GROUP_NOT_FOUND",
+            message: "گروه انتخاب‌شده وجود ندارد.",
+          },
+          { status: 404 }
+        );
+      }
+
+      objectGroupId = group.id;
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        title,
+        slug,
+        image,
+        objectGroupId,
       },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        image: true,
+        objectGroupId: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json(
+      { success: true, category },
       {
         status: 201,
-
-        headers: {
-          "Cache-Control": "no-store",
-        },
+        headers: { "Cache-Control": "no-store" },
       }
     );
   } catch (error) {
     if (
-      error instanceof
-        Prisma.PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
       return NextResponse.json(
         {
           success: false,
           code: "SLUG_ALREADY_EXISTS",
-          message:
-            "این Slug قبلاً برای دسته‌بندی دیگری استفاده شده است.",
+          message: "این Slug قبلاً برای دسته‌بندی دیگری استفاده شده است.",
         },
         { status: 409 }
       );
     }
 
-    console.error(
-      "Admin category creation failed:",
-      error
-    );
+    console.error("Admin category creation failed:", error);
 
     return NextResponse.json(
       {
         success: false,
         code: "INTERNAL_ERROR",
-        message:
-          "افزودن دسته‌بندی با خطا روبه‌رو شد.",
+        message: "افزودن دسته‌بندی با خطا روبه‌رو شد.",
       },
       { status: 500 }
     );

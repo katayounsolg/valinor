@@ -86,16 +86,13 @@ export default function Home() {
   <div className={styles.quoteLine}></div>
 
   <p>
-    VALINOR — A DESIGN STUDIO CREATING
-    <br />
-    LEATHER OBJECTS
+    A DESIGN STUDIO CREATING LEATHER OBJECTS
   </p>
 </section>
 
       <footer className={styles.footer}>
   <div>
     <h3>VALINOR</h3>
-    <p>A DESIGN-LED LEATHER GOODS STUDIO</p>
   </div>
 
   <div>

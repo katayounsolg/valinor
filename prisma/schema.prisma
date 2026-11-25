@@ -7,12 +7,6 @@ datasource db {
   provider = "sqlite"
 }
 
-/**
- * =========================================================
- * ENUMS
- * =========================================================
- */
-
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -35,43 +29,30 @@ enum PaymentStatus {
   REFUNDED
 }
 
-/**
- * =========================================================
- * USER
- * =========================================================
- */
-
 model User {
   id                 Int                  @id @default(autoincrement())
   phone              String               @unique
   name               String?
   role               UserRole             @default(CUSTOMER)
+  passwordHash       String?
   orderStatusHistory OrderStatusHistory[] @relation("OrderStatusChangedBy")
 
   sessions Session[]
   otpCodes OtpCode[]
-
-  orders    Order[]
+  orders   Order[]
   favorites Favorite[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/**
- * =========================================================
- * OTP
- * =========================================================
- */
-
 model OtpCode {
-  id Int @id @default(autoincrement())
-
+  id           Int      @id @default(autoincrement())
   phone        String
   code         String
   expiresAt    DateTime
-  used         Boolean @default(false)
-  attemptCount Int     @default(0)
+  used         Boolean  @default(false)
+  attemptCount Int      @default(0)
 
   userId Int?
   user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -80,12 +61,6 @@ model OtpCode {
 
   @@index([phone, createdAt])
 }
-
-/**
- * =========================================================
- * SESSION
- * =========================================================
- */
 
 model Session {
   id    String @id @default(cuid())
@@ -101,11 +76,21 @@ model Session {
   @@index([expiresAt])
 }
 
-/**
- * =========================================================
- * CATEGORY
- * =========================================================
- */
+// Tabs on the public Objects page, managed in the admin dashboard.
+model ObjectGroup {
+  id        Int     @id @default(autoincrement())
+  slug      String  @unique
+  title     String
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  categories Category[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
 
 model Category {
   id    Int    @id @default(autoincrement())
@@ -113,17 +98,17 @@ model Category {
   title String
   image String
 
+  // Nullable to preserve existing categories during migration.
+  objectGroupId Int?
+  objectGroup   ObjectGroup? @relation(fields: [objectGroupId], references: [id], onDelete: SetNull)
+
   products Product[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-/**
- * =========================================================
- * PRODUCT
- * =========================================================
- */
+  @@index([objectGroupId])
+}
 
 model Product {
   id Int @id @default(autoincrement())
@@ -133,6 +118,13 @@ model Product {
 
   shortDescription String?
   fullDescription  String?
+  leftDescription  String?
+  detailsContent   String?
+  shippingContent  String?
+
+  englishName   String?
+  seriesTitle   String?
+  seriesTagline String?
 
   price Int
 
@@ -161,21 +153,15 @@ model Product {
   @@index([isAvailable, stock])
 }
 
-/**
- * =========================================================
- * ORDER
- * =========================================================
- */
-
 model Order {
   id Int @id @default(autoincrement())
 
-  orderNumber   String               @unique
-  requestKey    String               @unique
+  orderNumber   String @unique
+  requestKey    String @unique
   statusHistory OrderStatusHistory[]
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
@@ -208,12 +194,6 @@ model Order {
   @@index([paymentStatus])
 }
 
-/**
- * =========================================================
- * ORDER ITEM
- * =========================================================
- */
-
 model OrderItem {
   id Int @id @default(autoincrement())
 
@@ -237,12 +217,6 @@ model OrderItem {
   @@index([productId])
 }
 
-/**
- * =========================================================
- * FAVORITE
- * =========================================================
- */
-
 model Favorite {
   id Int @id @default(autoincrement())
 
@@ -257,12 +231,6 @@ model Favorite {
   @@unique([userId, productId])
   @@index([productId])
 }
-
-/**
- * =========================================================
- * ORDER STATUS HISTORY
- * =========================================================
- */
 
 model OrderStatusHistory {
   id Int @id @default(autoincrement())

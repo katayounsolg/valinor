@@ -106,30 +106,77 @@ async function deliverOtp(
   phone: string,
   code: string
 ) {
-  /*
-    تا وقتی پنل ملی پیامک تأیید نشده،
-    فقط در محیط Development اجازه تست داریم.
-
-    وقتی API ملی پیامک آماده شد،
-    همین تابع را به سرویس SMS واقعی وصل می‌کنیم.
-  */
-
+  // Keep local-only OTP testing available, never in production.
   if (
-    process.env.NODE_ENV !==
-      "production" &&
-    process.env.OTP_DEV_MODE ===
-      "true"
+    process.env.NODE_ENV !== "production" &&
+    process.env.OTP_DEV_MODE === "true"
   ) {
-    console.log(
-      `[VALINOR DEV OTP] ${phone}: ${code}`
-    );
-
+    console.log(`[VALINOR DEV OTP] ${phone}: ${code}`);
     return;
   }
 
-  throw new Error(
-    "SMS_PROVIDER_NOT_CONFIGURED"
-  );
+  const username = process.env.MELIPAYAMAK_USERNAME?.trim();
+  const apiKey = process.env.MELIPAYAMAK_API_KEY?.trim();
+  const bodyIdRaw = process.env.MELIPAYAMAK_BODY_ID?.trim();
+  const bodyId = Number(bodyIdRaw);
+
+  if (
+    !username ||
+    !apiKey ||
+    !bodyIdRaw ||
+    !Number.isSafeInteger(bodyId) ||
+    bodyId <= 0
+  ) {
+    throw new Error("SMS_PROVIDER_NOT_CONFIGURED");
+  }
+
+  // "password" is the API key for this account, per provider support.
+  // The approved template contains one {0} variable, so text is the code.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(
+      "https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          password: apiKey,
+          text: code,
+          to: phone,
+          bodyId,
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`SMS_PROVIDER_HTTP_${response.status}`);
+    }
+
+    const result: unknown = await response.json();
+    if (!result || typeof result !== "object") {
+      throw new Error("SMS_PROVIDER_INVALID_RESPONSE");
+    }
+
+    const parsed = result as Record<string, unknown>;
+    const status = Number(parsed.RetStatus ?? parsed.retStatus);
+    const value = String(parsed.Value ?? parsed.value ?? "");
+
+    // Per provider docs: RetStatus=1 and a >15-digit receipt ID.
+    if (status !== 1 || !/^\d{16,}$/.test(value)) {
+      // Never log the OTP, phone or credentials.
+      throw new Error("SMS_PROVIDER_REJECTED");
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function setPendingPhoneCookie(
